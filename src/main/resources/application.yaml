@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: trade-risk-engine
+  datasource:
+    url: jdbc:postgresql://localhost:5432/traderisk?serverTimezone=UTC
+    hikari:
+      connection-init-sql: SET TIME ZONE 'UTC';
+    username: traderisk
+    password: traderisk
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+      flyway:
+        placeholders:
+          timezone: UTC
+    #properties:
+    #  hibernate:
+    #    format_sql: true
+    #database-platform: org.hibernate.dialect.PostgreSQLDialect

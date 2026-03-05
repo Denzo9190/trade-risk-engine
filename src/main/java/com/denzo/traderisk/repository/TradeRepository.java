@@ -1,0 +1,9 @@
+package com.denzo.traderisk.repository;
+
+import com.denzo.traderisk.domain.Trade;
+import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.List;
+
+public interface TradeRepository extends JpaRepository<Trade, Long> {
+    List<Trade> findBySymbol(String symbol);
+}
