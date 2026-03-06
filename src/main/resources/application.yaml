@@ -2,7 +2,7 @@ spring:
   application:
     name: trade-risk-engine
   datasource:
-    url: jdbc:postgresql://localhost:5432/traderisk?serverTimezone=UTC
+    url: jdbc:postgresql://localhost:5432/traderisk?options=-c%20TimeZone=UTC
     hikari:
       connection-init-sql: SET TIME ZONE 'UTC';
     username: traderisk

@@ -14,7 +14,6 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 class RealisedPnlServiceTest {
@@ -62,20 +61,49 @@ class RealisedPnlServiceTest {
 
         RealisedPnlResponse response = realisedPnlService.calculateRealisedPnl("BTCUSDT");
 
-        // Правильное математическое значение: 4000.00000000
         BigDecimal expected = new BigDecimal("4000.00000001");
         assertEquals(0, expected.compareTo(response.realisedPnl()));
     }
 
     @Test
-    void shouldThrowWhenSellWithoutPosition() {
+    void shouldHandleFlipFromLongToShort() {
         List<Trade> trades = List.of(
-                new Trade("BTCUSDT", BigDecimal.ONE, new BigDecimal("63000"), Side.SELL)
+                new Trade("BTCUSDT", BigDecimal.valueOf(2), new BigDecimal("60000"), Side.BUY),
+                new Trade("BTCUSDT", BigDecimal.valueOf(3), new BigDecimal("62000"), Side.SELL)
         );
         when(tradeRepository.findBySymbolOrderByIdAsc("BTCUSDT")).thenReturn(trades);
 
-        assertThrows(IllegalStateException.class, () ->
-                realisedPnlService.calculateRealisedPnl("BTCUSDT")
+        RealisedPnlResponse response = realisedPnlService.calculateRealisedPnl("BTCUSDT");
+
+        BigDecimal expected = new BigDecimal("4000.00000000");
+        assertEquals(0, expected.compareTo(response.realisedPnl()));
+    }
+
+    @Test
+    void shouldHandleFlipFromShortToLong() {
+        List<Trade> trades = List.of(
+                new Trade("BTCUSDT", BigDecimal.valueOf(2), new BigDecimal("60000"), Side.SELL),
+                new Trade("BTCUSDT", BigDecimal.valueOf(3), new BigDecimal("58000"), Side.BUY)
         );
+        when(tradeRepository.findBySymbolOrderByIdAsc("BTCUSDT")).thenReturn(trades);
+
+        RealisedPnlResponse response = realisedPnlService.calculateRealisedPnl("BTCUSDT");
+
+        BigDecimal expected = new BigDecimal("4000.00000000");
+        assertEquals(0, expected.compareTo(response.realisedPnl()));
+    }
+
+    @Test
+    void shouldHandlePartialShortClose() {
+        List<Trade> trades = List.of(
+                new Trade("BTCUSDT", BigDecimal.valueOf(2), new BigDecimal("60000"), Side.SELL),
+                new Trade("BTCUSDT", BigDecimal.ONE, new BigDecimal("58000"), Side.BUY)
+        );
+        when(tradeRepository.findBySymbolOrderByIdAsc("BTCUSDT")).thenReturn(trades);
+
+        RealisedPnlResponse response = realisedPnlService.calculateRealisedPnl("BTCUSDT");
+
+        BigDecimal expected = new BigDecimal("2000.00000000");
+        assertEquals(0, expected.compareTo(response.realisedPnl()));
     }
 }

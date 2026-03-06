@@ -1,4 +1,8 @@
 package com.denzo.traderisk.dto;
 
-public class RealisedPnlResponse {
-}
+import java.math.BigDecimal;
+
+public record RealisedPnlResponse(
+        String symbol,
+        BigDecimal realisedPnl
+) {}
