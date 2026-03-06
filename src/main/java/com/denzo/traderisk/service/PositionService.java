@@ -20,12 +20,13 @@ public class PositionService {
 
     /**
      * Возвращает текущую позицию по символу: знаковое количество, среднюю цену и нереализованный PnL.
-     * signedQty > 0 – лонг, signedQty < 0 – шорт, 0 – позиция закрыта.
+     * signedQty > 0 – лонг, signedQty < 0 – шорт, signedQty == 0 – позиция закрыта.
+     * Алгоритм использует closingQty/openingQty, что обеспечивает корректную обработку частичных закрытий и флипов.
      */
     public PositionResponse getPosition(String symbol, BigDecimal currentPrice) {
         List<Trade> trades = tradeRepository.findBySymbolOrderByIdAsc(symbol);
 
-        BigDecimal signedQty = BigDecimal.ZERO;          // знаковое количество
+        BigDecimal signedQty = BigDecimal.ZERO;          // знаковое количество текущей позиции
         BigDecimal avgPrice = BigDecimal.ZERO;           // средняя цена (всегда положительная)
 
         for (Trade trade : trades) {
@@ -33,42 +34,44 @@ public class PositionService {
             BigDecimal tradePrice = trade.getPrice();
             BigDecimal tradeSignedQty = trade.getSide() == Side.BUY ? tradeQty : tradeQty.negate();
 
-            // 1. Определяем closing quantity (часть, которая закрывает существующую позицию)
+            // Определяем closing quantity – часть сделки, закрывающая существующую позицию (противоположное направление)
             BigDecimal closingQty = BigDecimal.ZERO;
             if (signedQty.signum() != 0 && signedQty.signum() != tradeSignedQty.signum()) {
                 closingQty = tradeQty.min(signedQty.abs());
             }
             BigDecimal openingQty = tradeQty.subtract(closingQty); // часть, открывающая новую позицию в направлении сделки
 
-            // 2. Обновляем позицию
+            // Новая позиция после сделки
             BigDecimal newSignedQty = signedQty.add(tradeSignedQty);
 
-            // 3. Пересчёт средней цены
+            // Пересчёт средней цены (только если есть открываемая часть)
             if (openingQty.compareTo(BigDecimal.ZERO) > 0) {
-                // есть открываемая часть
                 if (signedQty.signum() == 0) {
-                    // открытие с нуля
+                    // Открытие с нуля
                     avgPrice = tradePrice;
                 } else if (signedQty.signum() == tradeSignedQty.signum()) {
-                    // то же направление – взвешенная средняя
+                    // То же направление – взвешенная средняя
                     BigDecimal oldValue = avgPrice.multiply(signedQty.abs());
                     BigDecimal tradeValue = tradePrice.multiply(openingQty);
                     avgPrice = oldValue.add(tradeValue)
                             .divide(signedQty.abs().add(openingQty), FinancialConstants.PRICE_SCALE, RoundingMode.HALF_UP);
                 } else {
-                    // противоположное направление – после закрытия открывается новая позиция по цене сделки
+                    // Смена знака (флип) – новая позиция открывается по цене сделки
                     avgPrice = tradePrice;
                 }
-            } // иначе closingQty > 0 – средняя цена не меняется
+            }
+            // Если только закрытие (openingQty == 0), средняя цена не меняется – позиция уменьшается, но её "качество" остаётся
 
             signedQty = newSignedQty;
         }
 
-        // Расчёт unrealised PnL
+        // Расчёт unrealised PnL в зависимости от знака позиции
         BigDecimal unrealisedPnl;
         if (signedQty.signum() > 0) {
+            // Лонг: (currentPrice - avgPrice) * количество
             unrealisedPnl = currentPrice.subtract(avgPrice).multiply(signedQty);
         } else if (signedQty.signum() < 0) {
+            // Шорт: (avgPrice - currentPrice) * |количество|
             unrealisedPnl = avgPrice.subtract(currentPrice).multiply(signedQty.abs());
         } else {
             unrealisedPnl = BigDecimal.ZERO;

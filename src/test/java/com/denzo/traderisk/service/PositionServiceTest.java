@@ -41,6 +41,7 @@ class PositionServiceTest {
 
     @Test
     void shouldCalculatePositionForLongOnly() {
+        // 2 BUY @60000 + 1 BUY @61000 → позиция 3, avg = (120000+61000)/3 = 60333.33333333
         List<Trade> trades = List.of(
                 new Trade("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000), Side.BUY),
                 new Trade("BTCUSDT", BigDecimal.ONE, BigDecimal.valueOf(61000), Side.BUY)
@@ -57,6 +58,7 @@ class PositionServiceTest {
 
     @Test
     void shouldCalculatePositionForShortOnly() {
+        // 2 SELL @60000 + 1 SELL @59000 → позиция -3, avg = (120000+59000)/3 = 59666.66666667
         List<Trade> trades = List.of(
                 new Trade("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000), Side.SELL),
                 new Trade("BTCUSDT", BigDecimal.ONE, BigDecimal.valueOf(59000), Side.SELL)
@@ -73,6 +75,8 @@ class PositionServiceTest {
 
     @Test
     void shouldHandlePartialCloseLong() {
+        // BUY 2@60000, BUY 1@61000, SELL 1.5@63000
+        // → остаток 1.5, avg = 60333.33333333, PnL = (63000-60333.33333333)*1.5 = 4000.00000001
         List<Trade> trades = List.of(
                 new Trade("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000), Side.BUY),
                 new Trade("BTCUSDT", BigDecimal.ONE, BigDecimal.valueOf(61000), Side.BUY),
@@ -84,12 +88,13 @@ class PositionServiceTest {
 
         assertEquals(0, BigDecimal.valueOf(1.5).compareTo(response.totalQuantity()));
         assertEquals(0, new BigDecimal("60333.33333333").compareTo(response.averagePrice()));
-        // (63000-60333.33333333)*1.5 = 4000.000000005 → после setScale(8) = 4000.00000001
         assertEquals(0, new BigDecimal("4000.00000001").compareTo(response.unrealisedPnl()));
     }
 
     @Test
     void shouldHandlePartialCloseShort() {
+        // SELL 2@60000, SELL 1@59000, BUY 1@58000
+        // → остаток -2, avg = 59666.66666667, PnL = (59666.66666667-57000)*2 = 5333.33333334
         List<Trade> trades = List.of(
                 new Trade("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000), Side.SELL),
                 new Trade("BTCUSDT", BigDecimal.ONE, BigDecimal.valueOf(59000), Side.SELL),
@@ -101,12 +106,13 @@ class PositionServiceTest {
 
         assertEquals(0, BigDecimal.valueOf(-2).compareTo(response.totalQuantity()));
         assertEquals(0, new BigDecimal("59666.66666667").compareTo(response.averagePrice()));
-        // (59666.66666667-57000)*2 = 5333.33333334
         assertEquals(0, new BigDecimal("5333.33333334").compareTo(response.unrealisedPnl()));
     }
 
     @Test
     void shouldHandleFlipFromLongToShort() {
+        // BUY 2@60000, SELL 3@62000 → закрытие 2 лонга (pnl = (62000-60000)*2 = 4000, не влияет на позицию),
+        // остаётся шорт 1@62000, при current=63000 unrealised = (62000-63000)*1 = -1000
         List<Trade> trades = List.of(
                 new Trade("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000), Side.BUY),
                 new Trade("BTCUSDT", BigDecimal.valueOf(3), BigDecimal.valueOf(62000), Side.SELL)
@@ -117,12 +123,13 @@ class PositionServiceTest {
 
         assertEquals(0, BigDecimal.valueOf(-1).compareTo(response.totalQuantity()));
         assertEquals(0, BigDecimal.valueOf(62000).compareTo(response.averagePrice()));
-        // (62000-63000)*1 = -1000
         assertEquals(0, new BigDecimal("-1000.00000000").compareTo(response.unrealisedPnl()));
     }
 
     @Test
     void shouldHandleFlipFromShortToLong() {
+        // SELL 2@60000, BUY 3@58000 → закрытие 2 шорта (pnl = (60000-58000)*2 = 4000),
+        // остаётся лонг 1@58000, при current=59000 unrealised = (59000-58000)*1 = 1000
         List<Trade> trades = List.of(
                 new Trade("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000), Side.SELL),
                 new Trade("BTCUSDT", BigDecimal.valueOf(3), BigDecimal.valueOf(58000), Side.BUY)
@@ -133,7 +140,6 @@ class PositionServiceTest {
 
         assertEquals(0, BigDecimal.ONE.compareTo(response.totalQuantity()));
         assertEquals(0, BigDecimal.valueOf(58000).compareTo(response.averagePrice()));
-        // (59000-58000)*1 = 1000
         assertEquals(0, new BigDecimal("1000.00000000").compareTo(response.unrealisedPnl()));
     }
 }
