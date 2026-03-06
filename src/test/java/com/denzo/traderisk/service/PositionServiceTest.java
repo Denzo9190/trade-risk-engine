@@ -11,9 +11,12 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.Mockito.when;
 
 class PositionServiceTest {
@@ -141,5 +144,31 @@ class PositionServiceTest {
         assertEquals(0, BigDecimal.ONE.compareTo(response.totalQuantity()));
         assertEquals(0, BigDecimal.valueOf(58000).compareTo(response.averagePrice()));
         assertEquals(0, new BigDecimal("1000.00000000").compareTo(response.unrealisedPnl()));
+    }
+
+    @Test
+    void tradeOrderAffectsAveragePrice_differentSequence() {
+        // Сценарий 1: покупка, продажа, покупка
+        List<Trade> order1 = List.of(
+                new Trade("BTCUSDT", BigDecimal.valueOf(1), BigDecimal.valueOf(60000), Side.BUY),
+                new Trade("BTCUSDT", BigDecimal.valueOf(0.5), BigDecimal.valueOf(62000), Side.SELL),
+                new Trade("BTCUSDT", BigDecimal.valueOf(1), BigDecimal.valueOf(61000), Side.BUY)
+        );
+
+        // Сценарий 2: две покупки, затем продажа
+        List<Trade> order2 = List.of(
+                new Trade("BTCUSDT", BigDecimal.valueOf(1), BigDecimal.valueOf(61000), Side.BUY),
+                new Trade("BTCUSDT", BigDecimal.valueOf(1), BigDecimal.valueOf(60000), Side.BUY),
+                new Trade("BTCUSDT", BigDecimal.valueOf(0.5), BigDecimal.valueOf(62000), Side.SELL)
+        );
+
+        when(tradeRepository.findBySymbolOrderByIdAsc("BTCUSDT")).thenReturn(order1);
+        PositionResponse result1 = positionService.getPosition("BTCUSDT", BigDecimal.valueOf(63000));
+
+        when(tradeRepository.findBySymbolOrderByIdAsc("BTCUSDT")).thenReturn(order2);
+        PositionResponse result2 = positionService.getPosition("BTCUSDT", BigDecimal.valueOf(63000));
+
+        // Средняя цена должна отличаться – порядок сделок важен
+        assertNotEquals(result1.averagePrice(), result2.averagePrice());
     }
 }
