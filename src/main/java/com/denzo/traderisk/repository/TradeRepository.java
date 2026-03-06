@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface TradeRepository extends JpaRepository<Trade, Long> {
     List<Trade> findBySymbol(String symbol);
+    List<Trade> findBySymbolOrderByIdAsc(String symbol); // для гарантии порядка
 }
