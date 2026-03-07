@@ -9,7 +9,9 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 @Entity
-@Table(name = "trades")
+@Table(name = "trades", indexes = {
+        @Index(name = "idx_trades_symbol_created", columnList = "symbol, created_at")
+})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Trade {
