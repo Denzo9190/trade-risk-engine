@@ -4,6 +4,7 @@ import com.denzo.traderisk.config.FinancialConstants;
 import com.denzo.traderisk.domain.Side;
 import com.denzo.traderisk.domain.Trade;
 import com.denzo.traderisk.dto.PositionResponse;
+import com.denzo.traderisk.math.FinancialMath;
 import com.denzo.traderisk.repository.TradeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -53,14 +54,16 @@ public class PositionService {
                     // То же направление – взвешенная средняя
                     BigDecimal oldValue = avgPrice.multiply(signedQty.abs());
                     BigDecimal tradeValue = tradePrice.multiply(openingQty);
-                    avgPrice = oldValue.add(tradeValue)
-                            .divide(signedQty.abs().add(openingQty), FinancialConstants.PRICE_SCALE, RoundingMode.HALF_UP);
+                    avgPrice = FinancialMath.money(
+                            oldValue.add(tradeValue)
+                                    .divide(newSignedQty.abs(), FinancialConstants.PRICE_SCALE, RoundingMode.HALF_UP)
+                    );
                 } else {
                     // Смена знака (флип) – новая позиция открывается по цене сделки
                     avgPrice = tradePrice;
                 }
             }
-            // Если только закрытие (openingQty == 0), средняя цена не меняется – позиция уменьшается, но её "качество" остаётся
+            // Если только закрытие (openingQty == 0), средняя цена не меняется
 
             signedQty = newSignedQty;
         }
@@ -69,14 +72,13 @@ public class PositionService {
         BigDecimal unrealisedPnl;
         if (signedQty.signum() > 0) {
             // Лонг: (currentPrice - avgPrice) * количество
-            unrealisedPnl = currentPrice.subtract(avgPrice).multiply(signedQty);
+            unrealisedPnl = FinancialMath.multiply(currentPrice.subtract(avgPrice), signedQty);
         } else if (signedQty.signum() < 0) {
             // Шорт: (avgPrice - currentPrice) * |количество|
-            unrealisedPnl = avgPrice.subtract(currentPrice).multiply(signedQty.abs());
+            unrealisedPnl = FinancialMath.multiply(avgPrice.subtract(currentPrice), signedQty.abs());
         } else {
             unrealisedPnl = BigDecimal.ZERO;
         }
-        unrealisedPnl = unrealisedPnl.setScale(FinancialConstants.PNL_SCALE, RoundingMode.HALF_UP);
 
         return new PositionResponse(symbol, signedQty, avgPrice, unrealisedPnl);
     }

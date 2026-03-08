@@ -5,12 +5,12 @@ import com.denzo.traderisk.domain.Side;
 import com.denzo.traderisk.domain.Trade;
 import com.denzo.traderisk.dto.PnLReconciliationResponse;
 import com.denzo.traderisk.dto.PositionResponse;
+import com.denzo.traderisk.math.FinancialMath;
 import com.denzo.traderisk.repository.TradeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.List;
 
 @Service
@@ -21,35 +21,48 @@ public class PnLReconciliationService {
     private final RealisedPnlService realisedPnlService;
     private final PositionService positionService;
 
+    /**
+     * Выполняет сверку PnL для указанного символа.
+     * Проверяет тождество: realised PnL + unrealised PnL == total PnL
+     * с учётом допустимой погрешности.
+     *
+     * @param symbol       символ
+     * @param currentPrice текущая рыночная цена
+     * @return результат сверки
+     */
     public PnLReconciliationResponse reconcile(String symbol, BigDecimal currentPrice) {
+        // Получаем все сделки в хронологическом порядке для детерминизма
         List<Trade> trades = tradeRepository.findBySymbolOrderByCreatedAtAsc(symbol);
 
+        // Суммарная выручка от всех SELL
         BigDecimal totalRevenue = trades.stream()
                 .filter(t -> t.getSide() == Side.SELL)
-                .map(t -> t.getPrice().multiply(t.getQuantity()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .map(t -> FinancialMath.multiply(t.getPrice(), t.getQuantity()))
+                .reduce(BigDecimal.ZERO, FinancialMath::add);
 
+        // Суммарные затраты на все BUY
         BigDecimal totalCost = trades.stream()
                 .filter(t -> t.getSide() == Side.BUY)
-                .map(t -> t.getPrice().multiply(t.getQuantity()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .map(t -> FinancialMath.multiply(t.getPrice(), t.getQuantity()))
+                .reduce(BigDecimal.ZERO, FinancialMath::add);
 
+        // Текущая позиция
         PositionResponse position = positionService.getPosition(symbol, currentPrice);
-        BigDecimal currentPositionValue = position.totalQuantity().multiply(currentPrice);
+        // Стоимость текущей позиции по рыночной цене
+        BigDecimal currentPositionValue = FinancialMath.multiply(position.totalQuantity(), currentPrice);
 
         // TODO: include fees once fee model is implemented
-        BigDecimal totalPnl = totalRevenue.add(currentPositionValue).subtract(totalCost)
-                .setScale(FinancialConstants.PNL_SCALE, RoundingMode.HALF_UP);
+        // total PnL = (revenue + currentPositionValue) - cost
+        BigDecimal totalPnl = FinancialMath.subtract(
+                FinancialMath.add(totalRevenue, currentPositionValue),
+                totalCost
+        );
 
         BigDecimal realisedPnl = realisedPnlService.calculateRealisedPnl(symbol).realisedPnl();
         BigDecimal unrealisedPnl = position.unrealisedPnl();
 
-        BigDecimal sum = realisedPnl.add(unrealisedPnl)
-                .setScale(FinancialConstants.PNL_SCALE, RoundingMode.HALF_UP);
-
-        BigDecimal difference = sum.subtract(totalPnl)
-                .abs()
-                .setScale(FinancialConstants.PNL_SCALE, RoundingMode.HALF_UP);
+        BigDecimal sum = FinancialMath.add(realisedPnl, unrealisedPnl);
+        BigDecimal difference = FinancialMath.subtract(sum, totalPnl).abs();
 
         boolean passed = difference.compareTo(FinancialConstants.PNL_TOLERANCE) <= 0;
 

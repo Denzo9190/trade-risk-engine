@@ -4,6 +4,7 @@ import com.denzo.traderisk.config.FinancialConstants;
 import com.denzo.traderisk.domain.Side;
 import com.denzo.traderisk.domain.Trade;
 import com.denzo.traderisk.dto.RealisedPnlResponse;
+import com.denzo.traderisk.math.FinancialMath;
 import com.denzo.traderisk.repository.TradeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,9 +30,9 @@ public class RealisedPnlService {
         // Получаем все сделки по символу в порядке возрастания ID (хронологический порядок)
         List<Trade> trades = tradeRepository.findBySymbolOrderByIdAsc(symbol);
 
-        BigDecimal positionQty = BigDecimal.ZERO;       // знаковое количество текущей позиции
-        BigDecimal avgPrice = BigDecimal.ZERO;          // средняя цена текущей позиции (всегда положительная)
-        BigDecimal realisedPnl = BigDecimal.ZERO;       // накопленная реализованная прибыль
+        BigDecimal signedQty = BigDecimal.ZERO;       // знаковое количество текущей позиции
+        BigDecimal avgPrice = BigDecimal.ZERO;        // средняя цена текущей позиции (всегда положительная)
+        BigDecimal realisedPnl = BigDecimal.ZERO;     // накопленная реализованная прибыль
 
         for (Trade trade : trades) {
             BigDecimal tradeQty = trade.getQuantity();
@@ -41,50 +42,50 @@ public class RealisedPnlService {
 
             // 1. Определяем количество, которое закрывает существующую позицию
             BigDecimal closingQty = BigDecimal.ZERO;
-            if (positionQty.signum() != 0 && positionQty.signum() != tradeSignedQty.signum()) {
+            if (signedQty.signum() != 0 && signedQty.signum() != tradeSignedQty.signum()) {
                 // направления противоположны – часть позиции закрывается
-                closingQty = tradeQty.min(positionQty.abs());
+                closingQty = tradeQty.min(signedQty.abs());
             }
+            BigDecimal openingQty = tradeQty.subtract(closingQty); // часть, открывающая новую позицию
 
             // 2. Расчёт реализованной прибыли для закрываемой части
             if (closingQty.compareTo(BigDecimal.ZERO) > 0) {
-                BigDecimal exitPrice = tradePrice;
                 BigDecimal pnl;
-                if (positionQty.signum() > 0) { // закрытие лонга
-                    pnl = exitPrice.subtract(avgPrice).multiply(closingQty);
+                if (signedQty.signum() > 0) { // закрытие лонга
+                    pnl = FinancialMath.multiply(tradePrice.subtract(avgPrice), closingQty);
                 } else { // закрытие шорта
-                    pnl = avgPrice.subtract(exitPrice).multiply(closingQty);
+                    pnl = FinancialMath.multiply(avgPrice.subtract(tradePrice), closingQty);
                 }
-                // округляем и добавляем к общей сумме
-                realisedPnl = realisedPnl.add(pnl.setScale(FinancialConstants.PNL_SCALE, RoundingMode.HALF_UP));
+                // добавляем к общей сумме
+                realisedPnl = FinancialMath.add(realisedPnl, pnl);
             }
 
             // 3. Обновляем количество позиции (знаковое)
-            BigDecimal newPositionQty = positionQty.add(tradeSignedQty);
+            BigDecimal newSignedQty = signedQty.add(tradeSignedQty);
 
-            // 4. Пересчёт средней цены в зависимости от новой позиции
-            if (newPositionQty.signum() == 0) {
-                // позиция полностью закрыта
-                avgPrice = BigDecimal.ZERO;
-            } else if (positionQty.signum() == 0) {
-                // открытие новой позиции с нуля
-                avgPrice = tradePrice;
-            } else if (positionQty.signum() == newPositionQty.signum()) {
-                // направление не изменилось – средняя взвешенная
-                BigDecimal oldValue = avgPrice.multiply(positionQty.abs());
-                BigDecimal tradeValue = tradePrice.multiply(tradeQty);
-                avgPrice = oldValue.add(tradeValue)
-                        .divide(newPositionQty.abs(), FinancialConstants.PRICE_SCALE, RoundingMode.HALF_UP);
-            } else {
-                // знак изменился – произошёл переворот: новая позиция открыта по цене сделки
-                avgPrice = tradePrice;
+            // 4. Пересчёт средней цены (только если есть открываемая часть)
+            if (openingQty.compareTo(BigDecimal.ZERO) > 0) {
+                if (signedQty.signum() == 0) {
+                    // открытие новой позиции с нуля
+                    avgPrice = tradePrice;
+                } else if (signedQty.signum() == tradeSignedQty.signum()) {
+                    // направление не изменилось – средняя взвешенная
+                    BigDecimal oldValue = avgPrice.multiply(signedQty.abs());
+                    BigDecimal tradeValue = tradePrice.multiply(openingQty);
+                    avgPrice = FinancialMath.money(
+                            oldValue.add(tradeValue)
+                                    .divide(newSignedQty.abs(), FinancialConstants.PRICE_SCALE, RoundingMode.HALF_UP)
+                    );
+                } else {
+                    // знак изменился – произошёл переворот: новая позиция открыта по цене сделки
+                    avgPrice = tradePrice;
+                }
             }
 
-            positionQty = newPositionQty;
+            signedQty = newSignedQty;
         }
 
-        // Финальное округление realised PnL
-        realisedPnl = realisedPnl.setScale(FinancialConstants.PNL_SCALE, RoundingMode.HALF_UP);
+        // realisedPnl уже имеет правильный масштаб благодаря FinancialMath
         return new RealisedPnlResponse(symbol, realisedPnl);
     }
 }
