@@ -68,17 +68,19 @@ public class PositionService {
             signedQty = newSignedQty;
         }
 
-        // Расчёт unrealised PnL в зависимости от знака позиции
+        // Расчёт unrealised PnL
         BigDecimal unrealisedPnl;
         if (signedQty.signum() > 0) {
-            // Лонг: (currentPrice - avgPrice) * количество
             unrealisedPnl = FinancialMath.multiply(currentPrice.subtract(avgPrice), signedQty);
         } else if (signedQty.signum() < 0) {
-            // Шорт: (avgPrice - currentPrice) * |количество|
             unrealisedPnl = FinancialMath.multiply(avgPrice.subtract(currentPrice), signedQty.abs());
         } else {
             unrealisedPnl = BigDecimal.ZERO;
         }
+
+        // Применяем финальное округление
+        avgPrice = FinancialMath.money(avgPrice);
+        unrealisedPnl = FinancialMath.money(unrealisedPnl);
 
         return new PositionResponse(symbol, signedQty, avgPrice, unrealisedPnl);
     }

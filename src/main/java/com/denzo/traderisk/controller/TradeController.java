@@ -22,9 +22,10 @@ public class TradeController {
     }
 
     @PostMapping
-    public ResponseEntity<Trade> create(
-            @Valid @RequestBody CreateTradeRequest request) {
-        return ResponseEntity.ok(tradeService.createTrade(request));
+    public ResponseEntity<Trade> create(@Valid @RequestBody CreateTradeRequest request,
+                                        @RequestParam BigDecimal currentPrice) {
+        Trade trade = tradeService.createTrade(request, currentPrice);
+        return ResponseEntity.ok(trade);
     }
 
     @GetMapping

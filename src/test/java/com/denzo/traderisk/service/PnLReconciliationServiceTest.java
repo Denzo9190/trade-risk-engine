@@ -1,6 +1,5 @@
 package com.denzo.traderisk.service;
 
-import com.denzo.traderisk.config.FinancialConstants;
 import com.denzo.traderisk.domain.Side;
 import com.denzo.traderisk.domain.Trade;
 import com.denzo.traderisk.dto.PnLReconciliationResponse;
@@ -9,16 +8,20 @@ import com.denzo.traderisk.dto.RealisedPnlResponse;
 import com.denzo.traderisk.repository.TradeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class PnLReconciliationServiceTest {
 
     @Mock
@@ -30,12 +33,15 @@ class PnLReconciliationServiceTest {
     @Mock
     private PositionService positionService;
 
+    @Mock
+    private LedgerService ledgerService; // добавлено
+
     @InjectMocks
     private PnLReconciliationService reconciliationService;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
+        // lenient().stub() можно использовать, если нужно, но обычно не обязательно
     }
 
     @Test

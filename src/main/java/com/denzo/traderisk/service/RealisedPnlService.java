@@ -86,6 +86,7 @@ public class RealisedPnlService {
         }
 
         // realisedPnl уже имеет правильный масштаб благодаря FinancialMath
+        realisedPnl = FinancialMath.money(realisedPnl);
         return new RealisedPnlResponse(symbol, realisedPnl);
     }
 }

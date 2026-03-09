@@ -4,25 +4,44 @@ import com.denzo.traderisk.domain.Side;
 import com.denzo.traderisk.domain.Trade;
 import com.denzo.traderisk.dto.CreateTradeRequest;
 import com.denzo.traderisk.dto.PnLResponse;
+import com.denzo.traderisk.dto.PositionResponse;
+import com.denzo.traderisk.math.FinancialMath;
 import com.denzo.traderisk.repository.TradeRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class TradeService {
 
     private final TradeRepository tradeRepository;
+    private final PositionService positionService;
+    private final RealisedPnlService realisedPnlService;
+    private final LedgerService ledgerService;
 
-    public TradeService(TradeRepository tradeRepository) {
-        this.tradeRepository = tradeRepository;
-    }
+    /**
+     * Создаёт новую сделку.
+     *
+     * @param request      данные сделки
+     * @param currentPrice текущая рыночная цена (для расчёта unrealised PnL)
+     * @return сохранённая сделка
+     */
+    @Transactional
+    public Trade createTrade(CreateTradeRequest request, BigDecimal currentPrice) {
+        // Валидация
+        if (request.quantity().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Quantity must be positive");
+        }
+        if (request.price().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Price must be positive");
+        }
 
-    public Trade createTrade(CreateTradeRequest request) {
-
+        // Создание сущности
         Trade trade = new Trade(
                 request.symbol(),
                 request.quantity(),
@@ -30,42 +49,52 @@ public class TradeService {
                 Side.valueOf(request.side().toUpperCase())
         );
 
-        return tradeRepository.save(trade);
+        Trade saved = tradeRepository.save(trade);
+
+        // После сохранения получаем актуальное состояние позиции и realised PnL
+        PositionResponse positionAfter = positionService.getPosition(saved.getSymbol(), currentPrice);
+        BigDecimal realisedPnlAfter = realisedPnlService.calculateRealisedPnl(saved.getSymbol()).realisedPnl();
+
+        // Запись в аудиторский журнал
+        ledgerService.recordTrade(saved, positionAfter, realisedPnlAfter);
+
+        return saved;
     }
 
+    /**
+     * Возвращает все сделки.
+     *
+     * @return список всех сделок
+     */
     public List<Trade> getAll() {
         return tradeRepository.findAll();
     }
 
-    // ---- расчёт unrealised PnL для одной сделки ----
-    public BigDecimal calculateUnrealisedPnl(Trade trade, BigDecimal currentPrice) {
-        BigDecimal priceDiff = trade.getSide() == Side.BUY
-                ? currentPrice.subtract(trade.getPrice())
-                : trade.getPrice().subtract(currentPrice);
-        return trade.getQuantity().multiply(priceDiff);
-    }
-
-    // ---- расчёт суммарного unrealised PnL для списка сделок ----
-    public BigDecimal calculateTotalUnrealisedPnl(List<Trade> trades, BigDecimal currentPrice) {
-        return trades.stream()
-                .map(t -> calculateUnrealisedPnl(t, currentPrice))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-    // ---- агрегация по символам ----
+    /**
+     * Возвращает нереализованный PnL по символу (или по всем символам, если symbol не указан).
+     * Устаревший метод, рекомендуется использовать PositionService.
+     *
+     * @param symbol       символ (может быть null для всех)
+     * @param currentPrice текущая рыночная цена
+     * @return список PnLResponse
+     */
     public List<PnLResponse> getUnrealisedPnlBySymbol(String symbol, BigDecimal currentPrice) {
-        List<Trade> trades = (symbol == null || symbol.isBlank())
-                ? tradeRepository.findAll()
-                : tradeRepository.findBySymbol(symbol);
+        // Если символ не указан, берём все символы из сделок
+        List<String> symbols;
+        if (symbol == null || symbol.isBlank()) {
+            symbols = tradeRepository.findAll().stream()
+                    .map(Trade::getSymbol)
+                    .distinct()
+                    .collect(Collectors.toList());
+        } else {
+            symbols = List.of(symbol);
+        }
 
-        Map<String, List<Trade>> grouped = trades.stream()
-                .collect(Collectors.groupingBy(Trade::getSymbol));
-
-        return grouped.entrySet().stream()
-                .map(entry -> new PnLResponse(
-                        entry.getKey(),
-                        calculateTotalUnrealisedPnl(entry.getValue(), currentPrice),
-                        entry.getValue().size()))
-                .toList();
+        return symbols.stream()
+                .map(s -> {
+                    PositionResponse pos = positionService.getPosition(s, currentPrice);
+                    return new PnLResponse(s, pos.unrealisedPnl(), pos.totalQuantity().intValue()); // tradeCount – не точный, но для совместимости
+                })
+                .collect(Collectors.toList());
     }
 }

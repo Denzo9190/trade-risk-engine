@@ -20,6 +20,7 @@ public class PnLReconciliationService {
     private final TradeRepository tradeRepository;
     private final RealisedPnlService realisedPnlService;
     private final PositionService positionService;
+    private final LedgerService ledgerService; // добавлено
 
     /**
      * Выполняет сверку PnL для указанного символа.
@@ -65,6 +66,9 @@ public class PnLReconciliationService {
         BigDecimal difference = FinancialMath.subtract(sum, totalPnl).abs();
 
         boolean passed = difference.compareTo(FinancialConstants.PNL_TOLERANCE) <= 0;
+
+        // Запись результата сверки в аудиторский журнал
+        ledgerService.recordReconciliation(symbol, totalPnl, realisedPnl, unrealisedPnl, passed);
 
         return new PnLReconciliationResponse(
                 symbol,
