@@ -6,9 +6,11 @@ import com.denzo.traderisk.dto.RealisedPnlResponse;
 import com.denzo.traderisk.repository.TradeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -16,6 +18,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class RealisedPnlServiceTest {
 
     @Mock
@@ -25,9 +28,7 @@ class RealisedPnlServiceTest {
     private RealisedPnlService realisedPnlService;
 
     @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
+    void setUp() {}
 
     @Test
     void shouldCalculateRealisedPnlForFullClose() {

@@ -20,18 +20,18 @@ public class PnLReconciliationService {
     private final TradeRepository tradeRepository;
     private final RealisedPnlService realisedPnlService;
     private final PositionService positionService;
-    private final LedgerService ledgerService; // добавлено
+    private final LedgerService ledgerService;
+    private final MarketPriceService marketPriceService; // добавлено
 
     /**
      * Выполняет сверку PnL для указанного символа.
      * Проверяет тождество: realised PnL + unrealised PnL == total PnL
      * с учётом допустимой погрешности.
      *
-     * @param symbol       символ
-     * @param currentPrice текущая рыночная цена
+     * @param символ, для которого выполняется сверка
      * @return результат сверки
      */
-    public PnLReconciliationResponse reconcile(String symbol, BigDecimal currentPrice) {
+    public PnLReconciliationResponse reconcile(String symbol) {
         // Получаем все сделки в хронологическом порядке для детерминизма
         List<Trade> trades = tradeRepository.findBySymbolOrderByCreatedAtAsc(symbol);
 
@@ -47,8 +47,9 @@ public class PnLReconciliationService {
                 .map(t -> FinancialMath.multiply(t.getPrice(), t.getQuantity()))
                 .reduce(BigDecimal.ZERO, FinancialMath::add);
 
-        // Текущая позиция
-        PositionResponse position = positionService.getPosition(symbol, currentPrice);
+        // Текущая позиция (цена будет получена через MarketPriceService)
+        PositionResponse position = positionService.getPosition(symbol);
+        BigDecimal currentPrice = marketPriceService.getCurrentPrice(symbol);
         // Стоимость текущей позиции по рыночной цене
         BigDecimal currentPositionValue = FinancialMath.multiply(position.totalQuantity(), currentPrice);
 

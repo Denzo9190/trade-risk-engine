@@ -18,17 +18,22 @@ import java.util.List;
 public class PositionService {
 
     private final TradeRepository tradeRepository;
+    private final MarketPriceService marketPriceService;
 
     /**
      * Возвращает текущую позицию по символу: знаковое количество, среднюю цену и нереализованный PnL.
      * signedQty > 0 – лонг, signedQty < 0 – шорт, signedQty == 0 – позиция закрыта.
      * Алгоритм использует closingQty/openingQty, что обеспечивает корректную обработку частичных закрытий и флипов.
+     * Цена берётся из MarketPriceService.
+
+     * @param symbol символ инструмента
+     * @return текущая позиция
      */
-    public PositionResponse getPosition(String symbol, BigDecimal currentPrice) {
+    public PositionResponse getPosition(String symbol) {
         List<Trade> trades = tradeRepository.findBySymbolOrderByIdAsc(symbol);
 
-        BigDecimal signedQty = BigDecimal.ZERO;          // знаковое количество текущей позиции
-        BigDecimal avgPrice = BigDecimal.ZERO;           // средняя цена (всегда положительная)
+        BigDecimal signedQty = BigDecimal.ZERO;
+        BigDecimal avgPrice = BigDecimal.ZERO;
 
         for (Trade trade : trades) {
             BigDecimal tradeQty = trade.getQuantity();
@@ -68,11 +73,16 @@ public class PositionService {
             signedQty = newSignedQty;
         }
 
-        // Расчёт unrealised PnL
+        // Получаем текущую цену из MarketPriceService
+        BigDecimal currentPrice = marketPriceService.getCurrentPrice(symbol);
+
+        // Расчёт unrealised PnL в зависимости от знака позиции
         BigDecimal unrealisedPnl;
         if (signedQty.signum() > 0) {
+            // Лонг: (currentPrice - avgPrice) * количество
             unrealisedPnl = FinancialMath.multiply(currentPrice.subtract(avgPrice), signedQty);
         } else if (signedQty.signum() < 0) {
+            // Шорт: (avgPrice - currentPrice) * |количество|
             unrealisedPnl = FinancialMath.multiply(avgPrice.subtract(currentPrice), signedQty.abs());
         } else {
             unrealisedPnl = BigDecimal.ZERO;

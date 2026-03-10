@@ -2,110 +2,111 @@ package com.denzo.traderisk.service;
 
 import com.denzo.traderisk.domain.Side;
 import com.denzo.traderisk.domain.Trade;
-import com.denzo.traderisk.dto.PnLResponse;
+import com.denzo.traderisk.dto.CreateTradeRequest;
 import com.denzo.traderisk.dto.PositionResponse;
+import com.denzo.traderisk.dto.RealisedPnlResponse;
 import com.denzo.traderisk.repository.TradeRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class TradeServiceTest {
 
     @Mock
     private TradeRepository tradeRepository;
 
     @Mock
-    private PositionService positionService;  // добавляем мок для PositionService
+    private PositionService positionService;
 
     @Mock
-    private RealisedPnlService realisedPnlService; // может не использоваться, но для полноты
+    private RealisedPnlService realisedPnlService;
 
     @Mock
-    private LedgerService ledgerService; // может не использоваться
+    private LedgerService ledgerService;
+
+    @Mock
+    private MarketPriceService marketPriceService;
 
     @InjectMocks
     private TradeService tradeService;
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
-
-    // Тесты для calculateUnrealisedPnl и calculateTotalUnrealisedPnl УДАЛЕНЫ,
-    // так как эти методы были перенесены в PositionService
-
     @Test
-    void getUnrealisedPnlBySymbol_shouldReturnCorrectPnlForSymbol() {
+    void shouldCreateTradeSuccessfully() {
         // given
-        String symbol = "BTCUSDT";
-        BigDecimal currentPrice = BigDecimal.valueOf(63500);
-
-        // Мокаем PositionService, чтобы он вернул нужную позицию
-        PositionResponse mockPosition = new PositionResponse(
-                symbol,
-                BigDecimal.valueOf(3),    // totalQuantity
-                BigDecimal.valueOf(60333.33333333), // avgPrice
-                BigDecimal.valueOf(8000.00000001)   // unrealisedPnl
+        CreateTradeRequest request = new CreateTradeRequest(
+                "BTCUSDT",
+                BigDecimal.valueOf(2),
+                BigDecimal.valueOf(60000),
+                "BUY"
         );
-        when(positionService.getPosition(eq(symbol), eq(currentPrice))).thenReturn(mockPosition);
+        Trade savedTrade = new Trade("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000), Side.BUY);
+        ReflectionTestUtils.setField(savedTrade, "id", 1L);
 
-        // Мокаем TradeRepository, чтобы он вернул список сделок (нужен для определения tradeCount)
-        // В текущей реализации getUnrealisedPnlBySymbol использует tradeRepository.findAll()
-        // для получения списка символов, но при указанном symbol он просто вызывает positionService.
-        // Однако tradeCount берётся из позиции (totalQuantity.intValue()), что не совсем правильно,
-        // но для теста мы можем проверить, что tradeCount равен int от totalQuantity.
-        // При желании можно изменить реализацию, чтобы tradeCount считался из реальных сделок,
-        // но пока оставим как есть.
-
-        // Для простоты замокаем tradeRepository.findBySymbol, если он используется (нет, не используется)
-        // Вместо этого мы не будем мокать tradeRepository вообще, так как метод не вызывает его напрямую.
+        when(tradeRepository.save(any(Trade.class))).thenReturn(savedTrade);
+        when(marketPriceService.getCurrentPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(63000));
+        when(positionService.getPosition("BTCUSDT")).thenReturn(
+                new PositionResponse("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000), BigDecimal.valueOf(6000))
+        );
+        when(realisedPnlService.calculateRealisedPnl("BTCUSDT")).thenReturn(
+                new RealisedPnlResponse("BTCUSDT", BigDecimal.ZERO)
+        );
 
         // when
-        List<PnLResponse> responses = tradeService.getUnrealisedPnlBySymbol(symbol, currentPrice);
+        Trade result = tradeService.createTrade(request);
 
         // then
-        assertEquals(1, responses.size());
-        PnLResponse response = responses.get(0);
-        assertEquals(symbol, response.symbol());
-        assertEquals(0, BigDecimal.valueOf(8000.00000001).compareTo(response.totalUnrealisedPnl()));
-        // tradeCount в текущей реализации равен int от totalQuantity (3)
-        assertEquals(3, response.tradeCount());
+        assertThat(result).isNotNull();
+        assertThat(result.getId()).isEqualTo(1L);
+        verify(tradeRepository).save(any(Trade.class));
+        verify(positionService).getPosition("BTCUSDT");
+        verify(realisedPnlService).calculateRealisedPnl("BTCUSDT");
+        verify(ledgerService).recordTrade(eq(savedTrade), any(PositionResponse.class), any(BigDecimal.class));
     }
 
-    // При необходимости можно добавить тест для случая symbol == null (все символы)
     @Test
-    void getUnrealisedPnlBySymbol_shouldReturnForAllSymbolsWhenSymbolIsNull() {
-        // given
-        BigDecimal currentPrice = BigDecimal.valueOf(63500);
-
-        // Мокаем tradeRepository.findAll() для получения списка уникальных символов
-        List<Trade> allTrades = List.of(
-                new Trade("BTCUSDT", BigDecimal.ONE, BigDecimal.valueOf(60000), Side.BUY),
-                new Trade("ETHUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(3000), Side.BUY)
+    void shouldThrowWhenQuantityIsZeroOrNegative() {
+        CreateTradeRequest request = new CreateTradeRequest(
+                "BTCUSDT",
+                BigDecimal.ZERO,
+                BigDecimal.valueOf(60000),
+                "BUY"
         );
-        when(tradeRepository.findAll()).thenReturn(allTrades);
+        assertThrows(IllegalArgumentException.class, () -> tradeService.createTrade(request));
+    }
 
-        // Мокаем positionService для каждого символа
-        PositionResponse btcPosition = new PositionResponse("BTCUSDT", BigDecimal.valueOf(1), BigDecimal.valueOf(60000), BigDecimal.valueOf(3500));
-        PositionResponse ethPosition = new PositionResponse("ETHUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(3000), BigDecimal.valueOf(200));
-        when(positionService.getPosition(eq("BTCUSDT"), eq(currentPrice))).thenReturn(btcPosition);
-        when(positionService.getPosition(eq("ETHUSDT"), eq(currentPrice))).thenReturn(ethPosition);
+    @Test
+    void shouldThrowWhenPriceIsZeroOrNegative() {
+        CreateTradeRequest request = new CreateTradeRequest(
+                "BTCUSDT",
+                BigDecimal.ONE,
+                BigDecimal.ZERO,
+                "BUY"
+        );
+        assertThrows(IllegalArgumentException.class, () -> tradeService.createTrade(request));
+    }
 
-        // when
-        List<PnLResponse> responses = tradeService.getUnrealisedPnlBySymbol(null, currentPrice);
+    @Test
+    void shouldGetAllTrades() {
+        Trade trade = new Trade("BTCUSDT", BigDecimal.ONE, BigDecimal.valueOf(60000), Side.BUY);
+        ReflectionTestUtils.setField(trade, "id", 1L);
+        when(tradeRepository.findAll()).thenReturn(List.of(trade));
 
-        // then
-        assertEquals(2, responses.size());
-        // можно проверить конкретные значения, но для краткости опустим
+        List<Trade> trades = tradeService.getAll();
+
+        assertThat(trades).hasSize(1);
+        assertThat(trades.getFirst().getId()).isEqualTo(1L);
     }
 }
