@@ -1,5 +1,6 @@
 package com.denzo.traderisk.service;
 
+import com.denzo.traderisk.cache.PositionCache;
 import com.denzo.traderisk.config.FinancialConstants;
 import com.denzo.traderisk.domain.Side;
 import com.denzo.traderisk.domain.Trade;
@@ -19,17 +20,19 @@ public class PositionService {
 
     private final TradeRepository tradeRepository;
     private final MarketPriceService marketPriceService;
+    private final PositionCache positionCache;
 
-    /**
-     * Возвращает текущую позицию по символу: знаковое количество, среднюю цену и нереализованный PnL.
-     * signedQty > 0 – лонг, signedQty < 0 – шорт, signedQty == 0 – позиция закрыта.
-     * Алгоритм использует closingQty/openingQty, что обеспечивает корректную обработку частичных закрытий и флипов.
-     * Цена берётся из MarketPriceService.
-
-     * @param symbol символ инструмента
-     * @return текущая позиция
-     */
     public PositionResponse getPosition(String symbol) {
+        PositionResponse cached = positionCache.get(symbol);
+        if (cached != null) {
+            return cached;
+        }
+        PositionResponse calculated = calculatePosition(symbol);
+        positionCache.put(symbol, calculated);
+        return calculated;
+    }
+
+    private PositionResponse calculatePosition(String symbol) {
         List<Trade> trades = tradeRepository.findBySymbolOrderByIdAsc(symbol);
 
         BigDecimal signedQty = BigDecimal.ZERO;
@@ -40,23 +43,18 @@ public class PositionService {
             BigDecimal tradePrice = trade.getPrice();
             BigDecimal tradeSignedQty = trade.getSide() == Side.BUY ? tradeQty : tradeQty.negate();
 
-            // Определяем closing quantity – часть сделки, закрывающая существующую позицию (противоположное направление)
             BigDecimal closingQty = BigDecimal.ZERO;
             if (signedQty.signum() != 0 && signedQty.signum() != tradeSignedQty.signum()) {
                 closingQty = tradeQty.min(signedQty.abs());
             }
-            BigDecimal openingQty = tradeQty.subtract(closingQty); // часть, открывающая новую позицию в направлении сделки
+            BigDecimal openingQty = tradeQty.subtract(closingQty);
 
-            // Новая позиция после сделки
             BigDecimal newSignedQty = signedQty.add(tradeSignedQty);
 
-            // Пересчёт средней цены (только если есть открываемая часть)
             if (openingQty.compareTo(BigDecimal.ZERO) > 0) {
                 if (signedQty.signum() == 0) {
-                    // Открытие с нуля
                     avgPrice = tradePrice;
                 } else if (signedQty.signum() == tradeSignedQty.signum()) {
-                    // То же направление – взвешенная средняя
                     BigDecimal oldValue = avgPrice.multiply(signedQty.abs());
                     BigDecimal tradeValue = tradePrice.multiply(openingQty);
                     avgPrice = FinancialMath.money(
@@ -64,34 +62,32 @@ public class PositionService {
                                     .divide(newSignedQty.abs(), FinancialConstants.PRICE_SCALE, RoundingMode.HALF_UP)
                     );
                 } else {
-                    // Смена знака (флип) – новая позиция открывается по цене сделки
                     avgPrice = tradePrice;
                 }
             }
-            // Если только закрытие (openingQty == 0), средняя цена не меняется
 
             signedQty = newSignedQty;
         }
 
-        // Получаем текущую цену из MarketPriceService
         BigDecimal currentPrice = marketPriceService.getCurrentPrice(symbol);
 
-        // Расчёт unrealised PnL в зависимости от знака позиции
         BigDecimal unrealisedPnl;
         if (signedQty.signum() > 0) {
-            // Лонг: (currentPrice - avgPrice) * количество
             unrealisedPnl = FinancialMath.multiply(currentPrice.subtract(avgPrice), signedQty);
         } else if (signedQty.signum() < 0) {
-            // Шорт: (avgPrice - currentPrice) * |количество|
             unrealisedPnl = FinancialMath.multiply(avgPrice.subtract(currentPrice), signedQty.abs());
         } else {
             unrealisedPnl = BigDecimal.ZERO;
         }
 
-        // Применяем финальное округление
         avgPrice = FinancialMath.money(avgPrice);
         unrealisedPnl = FinancialMath.money(unrealisedPnl);
 
         return new PositionResponse(symbol, signedQty, avgPrice, unrealisedPnl);
+    }
+
+    public void updatePosition(String symbol, BigDecimal quantity, BigDecimal price) {
+        // при получении события просто инвалидируем кэш – при следующем запросе позиция пересчитается
+        positionCache.remove(symbol);
     }
 }

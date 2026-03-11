@@ -3,8 +3,8 @@ package com.denzo.traderisk.service;
 import com.denzo.traderisk.domain.LedgerEntry;
 import com.denzo.traderisk.domain.LedgerEventType;
 import com.denzo.traderisk.domain.Side;
-import com.denzo.traderisk.domain.Trade;
 import com.denzo.traderisk.dto.PositionResponse;
+import com.denzo.traderisk.event.TradeExecutedEvent;
 import com.denzo.traderisk.repository.LedgerRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,14 +39,24 @@ class LedgerServiceTest {
     @Test
     void shouldRecordTrade() {
         // given
-        Trade trade = new Trade("BTCUSDT", BigDecimal.ONE, new BigDecimal("60000"), Side.BUY);
-        ReflectionTestUtils.setField(trade, "id", 1L); // устанавливаем ID, так как сеттер отсутствует
+        TradeExecutedEvent event = new TradeExecutedEvent(
+                1L,
+                "BTCUSDT",
+                BigDecimal.valueOf(2),
+                BigDecimal.valueOf(60000),
+                Side.BUY
+        );
 
-        PositionResponse positionAfter = new PositionResponse("BTCUSDT", BigDecimal.ONE, new BigDecimal("60000"), BigDecimal.ZERO);
+        PositionResponse positionAfter = new PositionResponse(
+                "BTCUSDT",
+                BigDecimal.valueOf(2),
+                BigDecimal.valueOf(60000),
+                BigDecimal.ZERO
+        );
         BigDecimal realisedPnl = BigDecimal.ZERO;
 
         // when
-        ledgerService.recordTrade(trade, positionAfter, realisedPnl);
+        ledgerService.recordTrade(event, positionAfter, realisedPnl);
 
         // then
         verify(ledgerRepository).save(entryCaptor.capture());
@@ -54,11 +65,11 @@ class LedgerServiceTest {
         assertThat(captured.getSymbol()).isEqualTo("BTCUSDT");
         assertThat(captured.getTradeId()).isEqualTo(1L);
         assertThat(captured.getEventType()).isEqualTo(LedgerEventType.TRADE_EXECUTED);
-        assertThat(captured.getTradeQuantity()).isEqualByComparingTo(BigDecimal.ONE);
-        assertThat(captured.getTradePrice()).isEqualByComparingTo(new BigDecimal("60000"));
+        assertThat(captured.getTradeQuantity()).isEqualByComparingTo(BigDecimal.valueOf(2));
+        assertThat(captured.getTradePrice()).isEqualByComparingTo(BigDecimal.valueOf(60000));
         assertThat(captured.getTradeSide()).isEqualTo("BUY");
-        assertThat(captured.getPositionQty()).isEqualByComparingTo(BigDecimal.ONE);
-        assertThat(captured.getAvgPrice()).isEqualByComparingTo(new BigDecimal("60000"));
+        assertThat(captured.getPositionQty()).isEqualByComparingTo(BigDecimal.valueOf(2));
+        assertThat(captured.getAvgPrice()).isEqualByComparingTo(BigDecimal.valueOf(60000));
         assertThat(captured.getRealisedPnl()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(captured.getUnrealisedPnl()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(captured.getDescription()).isEqualTo("Trade executed");
@@ -101,6 +112,21 @@ class LedgerServiceTest {
 
         // when
         List<LedgerEntry> history = ledgerService.getHistory("BTCUSDT");
+
+        // then
+        assertThat(history).hasSize(1);
+    }
+
+    @Test
+    void shouldGetHistoryWithDateRange() {
+        // given
+        Instant from = Instant.now().minusSeconds(3600);
+        Instant to = Instant.now();
+        when(ledgerRepository.findBySymbolAndTimestampBetweenOrderByTimestampAsc("BTCUSDT", from, to))
+                .thenReturn(List.of(new LedgerEntry()));
+
+        // when
+        List<LedgerEntry> history = ledgerService.getHistory("BTCUSDT", from, to);
 
         // then
         assertThat(history).hasSize(1);

@@ -2,8 +2,8 @@ package com.denzo.traderisk.service;
 
 import com.denzo.traderisk.domain.LedgerEntry;
 import com.denzo.traderisk.domain.LedgerEventType;
-import com.denzo.traderisk.domain.Trade;
 import com.denzo.traderisk.dto.PositionResponse;
+import com.denzo.traderisk.event.TradeExecutedEvent;
 import com.denzo.traderisk.repository.LedgerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,18 +19,15 @@ public class LedgerService {
 
     private final LedgerRepository ledgerRepository;
 
-    /**
-     * Запись исполненной сделки.
-     */
     @Transactional
-    public void recordTrade(Trade trade, PositionResponse positionAfter, BigDecimal realisedPnlAfter) {
+    public void recordTrade(TradeExecutedEvent event, PositionResponse positionAfter, BigDecimal realisedPnlAfter) {
         LedgerEntry entry = new LedgerEntry(
-                trade.getSymbol(),
-                trade.getId(),
+                event.symbol(),
+                event.tradeId(),
                 LedgerEventType.TRADE_EXECUTED,
-                trade.getQuantity(),
-                trade.getPrice(),
-                trade.getSide().name(),
+                event.quantity(),
+                event.price(),
+                event.side().name(),
                 positionAfter.totalQuantity(),
                 positionAfter.averagePrice(),
                 realisedPnlAfter,
@@ -40,9 +37,6 @@ public class LedgerService {
         ledgerRepository.save(entry);
     }
 
-    /**
-     * Запись результата сверки PnL.
-     */
     @Transactional
     public void recordReconciliation(String symbol, BigDecimal totalPnl, BigDecimal realisedPnl,
                                      BigDecimal unrealisedPnl, boolean passed) {
@@ -62,23 +56,14 @@ public class LedgerService {
         ledgerRepository.save(entry);
     }
 
-    /**
-     * Получить историю по символу.
-     */
     public List<LedgerEntry> getHistory(String symbol) {
         return ledgerRepository.findBySymbolOrderByTimestampAsc(symbol);
     }
 
-    /**
-     * Получить историю по символу за период.
-     */
     public List<LedgerEntry> getHistory(String symbol, Instant from, Instant to) {
         return ledgerRepository.findBySymbolAndTimestampBetweenOrderByTimestampAsc(symbol, from, to);
     }
 
-    /**
-     * Получить всю историю (для отладки).
-     */
     public List<LedgerEntry> getAll() {
         return ledgerRepository.findAll();
     }

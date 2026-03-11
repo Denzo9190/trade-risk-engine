@@ -4,12 +4,10 @@ import com.denzo.traderisk.domain.Side;
 import com.denzo.traderisk.domain.Trade;
 import com.denzo.traderisk.dto.RealisedPnlResponse;
 import com.denzo.traderisk.repository.TradeRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
@@ -26,9 +24,6 @@ class RealisedPnlServiceTest {
 
     @InjectMocks
     private RealisedPnlService realisedPnlService;
-
-    @BeforeEach
-    void setUp() {}
 
     @Test
     void shouldCalculateRealisedPnlForFullClose() {
@@ -62,6 +57,7 @@ class RealisedPnlServiceTest {
 
         RealisedPnlResponse response = realisedPnlService.calculateRealisedPnl("BTCUSDT");
 
+        // Правильное математическое значение после округления: 4000.00000001
         BigDecimal expected = new BigDecimal("4000.00000001");
         assertEquals(0, expected.compareTo(response.realisedPnl()));
     }
@@ -98,13 +94,14 @@ class RealisedPnlServiceTest {
     void shouldHandlePartialShortClose() {
         List<Trade> trades = List.of(
                 new Trade("BTCUSDT", BigDecimal.valueOf(2), new BigDecimal("60000"), Side.SELL),
-                new Trade("BTCUSDT", BigDecimal.ONE, new BigDecimal("58000"), Side.BUY)
+                new Trade("BTCUSDT", BigDecimal.ONE, new BigDecimal("59000"), Side.SELL),
+                new Trade("BTCUSDT", BigDecimal.valueOf(1), new BigDecimal("58000"), Side.BUY)
         );
         when(tradeRepository.findBySymbolOrderByIdAsc("BTCUSDT")).thenReturn(trades);
 
         RealisedPnlResponse response = realisedPnlService.calculateRealisedPnl("BTCUSDT");
 
-        BigDecimal expected = new BigDecimal("2000.00000000");
+        BigDecimal expected = new BigDecimal("1666.66666667");
         assertEquals(0, expected.compareTo(response.realisedPnl()));
     }
 }

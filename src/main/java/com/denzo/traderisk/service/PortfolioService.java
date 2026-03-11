@@ -18,7 +18,7 @@ public class PortfolioService {
     private final TradeRepository tradeRepository;
     private final PositionService positionService;
     private final RealisedPnlService realisedPnlService;
-    private final MarketPriceService marketPriceService; // добавлено
+    private final MarketPriceService marketPriceService;
 
     public PortfolioResponse getPortfolio() {
         List<String> symbols = tradeRepository.findDistinctSymbols();

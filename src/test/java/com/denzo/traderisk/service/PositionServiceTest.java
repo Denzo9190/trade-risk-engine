@@ -1,5 +1,6 @@
 package com.denzo.traderisk.service;
 
+import com.denzo.traderisk.cache.PositionCache;
 import com.denzo.traderisk.domain.Side;
 import com.denzo.traderisk.domain.Trade;
 import com.denzo.traderisk.dto.PositionResponse;
@@ -26,6 +27,9 @@ class PositionServiceTest {
     @Mock
     private MarketPriceService marketPriceService;
 
+    @Mock
+    private PositionCache positionCache;  // добавлен мок
+
     @InjectMocks
     private PositionService positionService;
 
@@ -33,6 +37,8 @@ class PositionServiceTest {
     void shouldReturnEmptyPositionWhenNoTrades() {
         when(tradeRepository.findBySymbolOrderByIdAsc("BTCUSDT")).thenReturn(List.of());
         when(marketPriceService.getCurrentPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(63000));
+        // Кэш должен вернуть null, чтобы вызвался calculatePosition
+        when(positionCache.get("BTCUSDT")).thenReturn(null);
 
         PositionResponse response = positionService.getPosition("BTCUSDT");
 
@@ -49,6 +55,7 @@ class PositionServiceTest {
         );
         when(tradeRepository.findBySymbolOrderByIdAsc("BTCUSDT")).thenReturn(trades);
         when(marketPriceService.getCurrentPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(63000));
+        when(positionCache.get("BTCUSDT")).thenReturn(null);
 
         PositionResponse response = positionService.getPosition("BTCUSDT");
 
@@ -65,6 +72,7 @@ class PositionServiceTest {
         );
         when(tradeRepository.findBySymbolOrderByIdAsc("BTCUSDT")).thenReturn(trades);
         when(marketPriceService.getCurrentPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(58000));
+        when(positionCache.get("BTCUSDT")).thenReturn(null);
 
         PositionResponse response = positionService.getPosition("BTCUSDT");
 
@@ -82,6 +90,7 @@ class PositionServiceTest {
         );
         when(tradeRepository.findBySymbolOrderByIdAsc("BTCUSDT")).thenReturn(trades);
         when(marketPriceService.getCurrentPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(63000));
+        when(positionCache.get("BTCUSDT")).thenReturn(null);
 
         PositionResponse response = positionService.getPosition("BTCUSDT");
 
@@ -99,6 +108,7 @@ class PositionServiceTest {
         );
         when(tradeRepository.findBySymbolOrderByIdAsc("BTCUSDT")).thenReturn(trades);
         when(marketPriceService.getCurrentPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(57000));
+        when(positionCache.get("BTCUSDT")).thenReturn(null);
 
         PositionResponse response = positionService.getPosition("BTCUSDT");
 
@@ -115,6 +125,7 @@ class PositionServiceTest {
         );
         when(tradeRepository.findBySymbolOrderByIdAsc("BTCUSDT")).thenReturn(trades);
         when(marketPriceService.getCurrentPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(63000));
+        when(positionCache.get("BTCUSDT")).thenReturn(null);
 
         PositionResponse response = positionService.getPosition("BTCUSDT");
 
@@ -131,6 +142,7 @@ class PositionServiceTest {
         );
         when(tradeRepository.findBySymbolOrderByIdAsc("BTCUSDT")).thenReturn(trades);
         when(marketPriceService.getCurrentPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(59000));
+        when(positionCache.get("BTCUSDT")).thenReturn(null);
 
         PositionResponse response = positionService.getPosition("BTCUSDT");
 
@@ -156,9 +168,11 @@ class PositionServiceTest {
         );
 
         when(marketPriceService.getCurrentPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(63000));
+        when(positionCache.get("BTCUSDT")).thenReturn(null); // для первого вызова
         when(tradeRepository.findBySymbolOrderByIdAsc("BTCUSDT")).thenReturn(order1);
         PositionResponse result1 = positionService.getPosition("BTCUSDT");
 
+        when(positionCache.get("BTCUSDT")).thenReturn(null); // для второго вызова
         when(tradeRepository.findBySymbolOrderByIdAsc("BTCUSDT")).thenReturn(order2);
         PositionResponse result2 = positionService.getPosition("BTCUSDT");
 

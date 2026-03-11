@@ -3,8 +3,8 @@ package com.denzo.traderisk.service;
 import com.denzo.traderisk.domain.Side;
 import com.denzo.traderisk.domain.Trade;
 import com.denzo.traderisk.dto.CreateTradeRequest;
-import com.denzo.traderisk.dto.PnLResponse;
-import com.denzo.traderisk.dto.PositionResponse;
+import com.denzo.traderisk.event.DomainEventPublisher;
+import com.denzo.traderisk.event.TradeExecutedEvent;
 import com.denzo.traderisk.repository.TradeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,19 +18,8 @@ import java.util.List;
 public class TradeService {
 
     private final TradeRepository tradeRepository;
-    private final PositionService positionService;
-    private final RealisedPnlService realisedPnlService;
-    private final LedgerService ledgerService;
-    private final MarketPriceService marketPriceService; // добавлено
+    private final DomainEventPublisher eventPublisher;
 
-
-    /**
-     * Создаёт новую сделку.
-     *
-     * @param request      данные сделки
-     * @param currentPrice текущая рыночная цена (для расчёта unrealised PnL)
-     * @return сохранённая сделка
-     */
     @Transactional
     public Trade createTrade(CreateTradeRequest request) {
         // валидация
@@ -49,27 +38,20 @@ public class TradeService {
         );
         Trade saved = tradeRepository.save(trade);
 
-        // получаем текущую цену из сервиса
-        BigDecimal currentPrice = marketPriceService.getCurrentPrice(saved.getSymbol());
-
-        PositionResponse positionAfter = positionService.getPosition(saved.getSymbol());
-        BigDecimal realisedPnlAfter = realisedPnlService.calculateRealisedPnl(saved.getSymbol()).realisedPnl();
-
-        ledgerService.recordTrade(saved, positionAfter, realisedPnlAfter);
+        // публикация события
+        TradeExecutedEvent event = new TradeExecutedEvent(
+                saved.getId(),
+                saved.getSymbol(),
+                saved.getQuantity(),
+                saved.getPrice(),
+                saved.getSide()
+        );
+        eventPublisher.publish(event);
 
         return saved;
     }
 
-    /**
-     * Возвращает все сделки.
-     */
     public List<Trade> getAll() {
         return tradeRepository.findAll();
-    }
-
-    public List<PnLResponse> getUnrealisedPnlBySymbol(String symbol) {
-        // Получаем позицию и конвертируем в PnLResponse
-        PositionResponse pos = positionService.getPosition(symbol);
-        return List.of(new PnLResponse(symbol, pos.unrealisedPnl(), pos.totalQuantity().intValue()));
     }
 }
