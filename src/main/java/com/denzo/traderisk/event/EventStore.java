@@ -1,17 +1,18 @@
 package com.denzo.traderisk.event;
 
 import org.springframework.stereotype.Component;
-
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Collectors;
 
 @Component
 public class EventStore {
 
-    private final List<DomainEvent> events = new CopyOnWriteArrayList<>();
+    private final Queue<DomainEvent> events = new ConcurrentLinkedQueue<>();
 
     public void append(DomainEvent event) {
-        events.add(event);
+        events.offer(event);
     }
 
     public List<DomainEvent> getAll() {
@@ -19,6 +20,6 @@ public class EventStore {
     }
 
     public void clear() {
-        events.clear(); // for tests only
+        events.clear();
     }
 }

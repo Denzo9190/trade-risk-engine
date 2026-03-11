@@ -23,13 +23,7 @@ public class PositionService {
     private final PositionCache positionCache;
 
     public PositionResponse getPosition(String symbol) {
-        PositionResponse cached = positionCache.get(symbol);
-        if (cached != null) {
-            return cached;
-        }
-        PositionResponse calculated = calculatePosition(symbol);
-        positionCache.put(symbol, calculated);
-        return calculated;
+        return positionCache.computeIfAbsent(symbol, s -> calculatePosition(s));
     }
 
     private PositionResponse calculatePosition(String symbol) {

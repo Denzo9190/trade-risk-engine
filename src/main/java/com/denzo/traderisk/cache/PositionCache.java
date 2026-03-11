@@ -5,14 +5,15 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 @Component
 public class PositionCache {
 
     private final Map<String, PositionResponse> cache = new ConcurrentHashMap<>();
 
-    public PositionResponse get(String symbol) {
-        return cache.get(symbol);
+    public PositionResponse computeIfAbsent(String symbol, Function<String, PositionResponse> mappingFunction) {
+        return cache.computeIfAbsent(symbol, mappingFunction);
     }
 
     public void put(String symbol, PositionResponse position) {

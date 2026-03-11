@@ -4,6 +4,7 @@ import com.denzo.traderisk.event.TradeExecutedEvent;
 import com.denzo.traderisk.service.RealisedPnlService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -13,6 +14,7 @@ public class PnLEventHandler {
     private final RealisedPnlService realisedPnlService;
 
     @EventListener
+    @Order(3)
     public void handleTradeExecuted(TradeExecutedEvent event) {
         // При желании можно вызывать пересчёт realised PnL для символа.
         // Здесь для простоты просто считаем realised, но можно и не делать,
