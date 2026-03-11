@@ -53,6 +53,29 @@ flowchart TD
     StrategyEngine --> MarketPriceService
     StrategyEngine --> TradeService
 ```
+UPD
+```mermaid
+flowchart TD
+API[Trade API] -->|create| Event[TradeExecutedEvent]
+
+    Event -->|publish| PosHandler[Position Event Handler]
+    Event -->|publish| PnLHandler[PnL Event Handler]
+    Event -->|publish| LedgerHandler[Ledger Event Handler]
+    Event -->|store| Store[Event Store]
+
+    PosHandler --> PosService[Position Service]
+    PosService --> Cache[Position Cache]
+
+    PnLHandler --> PnLService[Realised PnL Service]
+
+    LedgerHandler --> LedgerService[Ledger Service]
+
+    Store --> Replay[Replay Service]
+    Replay --> PosHandler
+
+    PosService --> Portfolio[PortfolioService]
+    PnLService --> Portfolio
+```
 ## Engineering Principles
 
 - **Deterministic processing** – trades always processed in fixed order (`ORDER BY id`) to ensure reproducible results.
