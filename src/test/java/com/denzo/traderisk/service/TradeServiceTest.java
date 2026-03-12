@@ -3,10 +3,10 @@ package com.denzo.traderisk.service;
 import com.denzo.traderisk.domain.Side;
 import com.denzo.traderisk.domain.Trade;
 import com.denzo.traderisk.dto.CreateTradeRequest;
-import com.denzo.traderisk.dto.PositionResponse;
-import com.denzo.traderisk.dto.RealisedPnlResponse;
+import com.denzo.traderisk.dto.RiskCheckResult;
 import com.denzo.traderisk.event.DomainEventPublisher;
 import com.denzo.traderisk.event.TradeExecutedEvent;
+import com.denzo.traderisk.exception.RiskViolationException;
 import com.denzo.traderisk.repository.TradeRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,6 +23,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,19 +33,10 @@ class TradeServiceTest {
     private TradeRepository tradeRepository;
 
     @Mock
-    private PositionService positionService;
+    private DomainEventPublisher domainEventPublisher;
 
     @Mock
-    private RealisedPnlService realisedPnlService;
-
-    @Mock
-    private LedgerService ledgerService;
-
-    @Mock
-    private MarketPriceService marketPriceService;
-
-    @Mock
-    private DomainEventPublisher eventPublisher; // добавлен мок
+    private RiskService riskService;
 
     @InjectMocks
     private TradeService tradeService;
@@ -64,6 +56,8 @@ class TradeServiceTest {
         Trade savedTrade = new Trade("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000), Side.BUY);
         ReflectionTestUtils.setField(savedTrade, "id", 1L);
 
+        when(riskService.checkTrade(anyString(), any(), any()))
+                .thenReturn(RiskCheckResult.ok());
         when(tradeRepository.save(any(Trade.class))).thenReturn(savedTrade);
 
         // when
@@ -72,20 +66,15 @@ class TradeServiceTest {
         // then
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo(1L);
+        verify(riskService).checkTrade("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000));
         verify(tradeRepository).save(any(Trade.class));
-
-        // проверяем публикацию события
-        verify(eventPublisher).publish(eventCaptor.capture());
-        TradeExecutedEvent capturedEvent = eventCaptor.getValue();
-        assertThat(capturedEvent.tradeId()).isEqualTo(1L);
-        assertThat(capturedEvent.symbol()).isEqualTo("BTCUSDT");
-        assertThat(capturedEvent.quantity()).isEqualByComparingTo(BigDecimal.valueOf(2));
-        assertThat(capturedEvent.price()).isEqualByComparingTo(BigDecimal.valueOf(60000));
-        assertThat(capturedEvent.side()).isEqualTo(Side.BUY);
-
-        // проверяем, что positionService и realisedPnlService не вызывались напрямую
-        verify(positionService, never()).getPosition(anyString());
-        verify(realisedPnlService, never()).calculateRealisedPnl(anyString());
+        verify(domainEventPublisher).publish(eventCaptor.capture());
+        TradeExecutedEvent publishedEvent = eventCaptor.getValue();
+        assertThat(publishedEvent.symbol()).isEqualTo("BTCUSDT");
+        assertThat(publishedEvent.quantity()).isEqualByComparingTo("2");
+        assertThat(publishedEvent.price()).isEqualByComparingTo("60000");
+        assertThat(publishedEvent.side()).isEqualTo(Side.BUY);
+        verifyNoMoreInteractions(riskService, tradeRepository, domainEventPublisher);
     }
 
     @Test
@@ -111,6 +100,24 @@ class TradeServiceTest {
     }
 
     @Test
+    void shouldThrowWhenRiskCheckFails() {
+        CreateTradeRequest request = new CreateTradeRequest(
+                "BTCUSDT",
+                BigDecimal.valueOf(6),
+                BigDecimal.valueOf(60000),
+                "BUY"
+        );
+        when(riskService.checkTrade(anyString(), any(), any()))
+                .thenReturn(RiskCheckResult.rejected("Trade size exceeds limit"));
+
+        RiskViolationException exception = assertThrows(RiskViolationException.class,
+                () -> tradeService.createTrade(request));
+        assertThat(exception.getMessage()).contains("Trade size exceeds limit");
+        verify(tradeRepository, never()).save(any(Trade.class));
+        verify(domainEventPublisher, never()).publish(any());
+    }
+
+    @Test
     void shouldGetAllTrades() {
         Trade trade = new Trade("BTCUSDT", BigDecimal.ONE, BigDecimal.valueOf(60000), Side.BUY);
         ReflectionTestUtils.setField(trade, "id", 1L);
@@ -119,6 +126,7 @@ class TradeServiceTest {
         List<Trade> trades = tradeService.getAll();
 
         assertThat(trades).hasSize(1);
+        assertThat(trades.getFirst().getSymbol()).isEqualTo("BTCUSDT");
         assertThat(trades.getFirst().getId()).isEqualTo(1L);
     }
 }

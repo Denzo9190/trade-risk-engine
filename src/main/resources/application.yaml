@@ -22,3 +22,7 @@ spring:
     #  hibernate:
     #    format_sql: true
     #database-platform: org.hibernate.dialect.PostgreSQLDialect
+risk:
+  max-trade-size: 5
+  max-position-size: 10
+  max-portfolio-exposure: 500000
