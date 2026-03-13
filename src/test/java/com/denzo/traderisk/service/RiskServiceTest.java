@@ -4,10 +4,13 @@ import com.denzo.traderisk.config.RiskLimits;
 import com.denzo.traderisk.dto.PortfolioResponse;
 import com.denzo.traderisk.dto.PositionResponse;
 import com.denzo.traderisk.dto.RiskCheckResult;
+import com.denzo.traderisk.risk.MaxPositionPerSymbolRule;
+import com.denzo.traderisk.risk.MaxPortfolioExposureRule;
+import com.denzo.traderisk.risk.MaxTradeSizeRule;
+import com.denzo.traderisk.risk.RiskRule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -21,14 +24,9 @@ import static org.mockito.Mockito.when;
 class RiskServiceTest {
 
     @Mock
-    private PositionService positionService;
-
-    @Mock
     private PortfolioService portfolioService;
 
     private RiskLimits limits;
-
-    @InjectMocks
     private RiskService riskService;
 
     @BeforeEach
@@ -37,64 +35,70 @@ class RiskServiceTest {
         limits.setMaxTradeSize(BigDecimal.valueOf(5));
         limits.setMaxPositionSize(BigDecimal.valueOf(10));
         limits.setMaxPortfolioExposure(BigDecimal.valueOf(500_000));
-        riskService = new RiskService(positionService, portfolioService, limits);
+
+        // Создаём реальные правила
+        List<RiskRule> rules = List.of(
+                new MaxTradeSizeRule(limits),
+                new MaxPositionPerSymbolRule(limits),
+                new MaxPortfolioExposureRule(limits)
+        );
+
+        riskService = new RiskService(rules, portfolioService);
     }
 
     @Test
-    void shouldAllowTradeWithinLimits() {
-        String symbol = "BTCUSDT";
-        BigDecimal qty = BigDecimal.valueOf(2);
-        BigDecimal price = BigDecimal.valueOf(60000);
+    void shouldAllowTradeWhenAllRulesPass() {
+        // Подготавливаем портфель с позицией 1 BTC и экспозицией 100k
+        PositionResponse btcPos = new PositionResponse("BTCUSDT", BigDecimal.ONE, BigDecimal.valueOf(60000), BigDecimal.ZERO);
+        PortfolioResponse portfolio = new PortfolioResponse(
+                BigDecimal.ZERO, BigDecimal.ZERO,
+                BigDecimal.valueOf(100_000), List.of(btcPos)
+        );
+        when(portfolioService.getPortfolio()).thenReturn(portfolio);
 
-        when(positionService.getPosition(symbol))
-                .thenReturn(new PositionResponse(symbol, BigDecimal.valueOf(1), BigDecimal.valueOf(60000), BigDecimal.ZERO));
-        when(portfolioService.getPortfolio())
-                .thenReturn(new PortfolioResponse(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.valueOf(100_000), List.of()));
-
-        RiskCheckResult result = riskService.checkTrade(symbol, qty, price);
+        RiskCheckResult result = riskService.checkTrade("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000));
 
         assertThat(result.allowed()).isTrue();
     }
 
     @Test
-    void shouldRejectTradeWhenTradeSizeExceedsLimit() {
-        String symbol = "BTCUSDT";
-        BigDecimal qty = BigDecimal.valueOf(6); // больше 5
-        BigDecimal price = BigDecimal.valueOf(60000);
+    void shouldRejectWhenTradeSizeExceedsLimit() {
+        PortfolioResponse emptyPortfolio = new PortfolioResponse(
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, List.of()
+        );
+        when(portfolioService.getPortfolio()).thenReturn(emptyPortfolio);
 
-        RiskCheckResult result = riskService.checkTrade(symbol, qty, price);
+        RiskCheckResult result = riskService.checkTrade("BTCUSDT", BigDecimal.valueOf(6), BigDecimal.valueOf(60000));
 
         assertThat(result.allowed()).isFalse();
         assertThat(result.reason()).contains("Trade size exceeds limit");
     }
 
     @Test
-    void shouldRejectTradeWhenPositionLimitExceeded() {
-        String symbol = "BTCUSDT";
-        BigDecimal qty = BigDecimal.valueOf(5);
-        BigDecimal price = BigDecimal.valueOf(60000);
+    void shouldRejectWhenPositionLimitExceeded() {
+        PositionResponse btcPos = new PositionResponse("BTCUSDT", BigDecimal.valueOf(8), BigDecimal.valueOf(60000), BigDecimal.ZERO);
+        PortfolioResponse portfolio = new PortfolioResponse(
+                BigDecimal.ZERO, BigDecimal.ZERO,
+                BigDecimal.valueOf(480_000), List.of(btcPos)
+        );
+        when(portfolioService.getPortfolio()).thenReturn(portfolio);
 
-        when(positionService.getPosition(symbol))
-                .thenReturn(new PositionResponse(symbol, BigDecimal.valueOf(7), BigDecimal.valueOf(60000), BigDecimal.ZERO)); // 7+5=12 > 10
-
-        RiskCheckResult result = riskService.checkTrade(symbol, qty, price);
+        RiskCheckResult result = riskService.checkTrade("BTCUSDT", BigDecimal.valueOf(3), BigDecimal.valueOf(60000));
 
         assertThat(result.allowed()).isFalse();
         assertThat(result.reason()).contains("Position limit exceeded");
     }
 
     @Test
-    void shouldRejectTradeWhenPortfolioExposureExceeded() {
-        String symbol = "BTCUSDT";
-        BigDecimal qty = BigDecimal.valueOf(3);
-        BigDecimal price = BigDecimal.valueOf(60000); // exposure = 180_000
+    void shouldRejectWhenPortfolioExposureExceeded() {
+        PositionResponse btcPos = new PositionResponse("BTCUSDT", BigDecimal.ONE, BigDecimal.valueOf(60000), BigDecimal.ZERO);
+        PortfolioResponse portfolio = new PortfolioResponse(
+                BigDecimal.ZERO, BigDecimal.ZERO,
+                BigDecimal.valueOf(400_000), List.of(btcPos)
+        );
+        when(portfolioService.getPortfolio()).thenReturn(portfolio);
 
-        when(positionService.getPosition(symbol))
-                .thenReturn(new PositionResponse(symbol, BigDecimal.ONE, BigDecimal.valueOf(60000), BigDecimal.ZERO));
-        when(portfolioService.getPortfolio())
-                .thenReturn(new PortfolioResponse(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.valueOf(400_000), List.of())); // 400k + 180k = 580k > 500k
-
-        RiskCheckResult result = riskService.checkTrade(symbol, qty, price);
+        RiskCheckResult result = riskService.checkTrade("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000));
 
         assertThat(result.allowed()).isFalse();
         assertThat(result.reason()).contains("Portfolio exposure limit exceeded");
