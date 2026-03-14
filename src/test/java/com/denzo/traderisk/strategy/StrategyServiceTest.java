@@ -1,5 +1,6 @@
 package com.denzo.traderisk.strategy;
 
+import com.denzo.traderisk.domain.Side;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -8,7 +9,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,15 +29,13 @@ class StrategyServiceTest {
 
     @BeforeEach
     void setUp() {
-        // Создаём список моков и передаём в конструктор сервиса вручную
-        List<TradingStrategy> strategies = Arrays.asList(strategy1, strategy2);
-        strategyService = new StrategyService(strategies);
+        strategyService = new StrategyService(List.of(strategy1, strategy2));
     }
 
     @Test
     void shouldCollectSignalsFromAllStrategies() {
-        Signal signal1 = new Signal("BTCUSDT", "BUY", BigDecimal.ONE, "Strategy1", Instant.now());
-        Signal signal2 = new Signal("BTCUSDT", "SELL", BigDecimal.valueOf(2), "Strategy2", Instant.now());
+        Signal signal1 = new Signal("BTCUSDT", Side.BUY, BigDecimal.ONE, "Strategy1", Instant.now());
+        Signal signal2 = new Signal("BTCUSDT", Side.SELL, BigDecimal.valueOf(2), "Strategy2", Instant.now());
 
         when(strategy1.generateSignal(anyString())).thenReturn(Optional.of(signal1));
         when(strategy2.generateSignal(anyString())).thenReturn(Optional.of(signal2));
@@ -51,12 +49,12 @@ class StrategyServiceTest {
     void shouldSkipEmptySignals() {
         when(strategy1.generateSignal(anyString())).thenReturn(Optional.empty());
         when(strategy2.generateSignal(anyString())).thenReturn(Optional.of(
-                new Signal("BTCUSDT", "BUY", BigDecimal.ONE, "Strategy2", Instant.now())
+                new Signal("BTCUSDT", Side.BUY, BigDecimal.ONE, "Strategy2", Instant.now())
         ));
 
         List<Signal> signals = strategyService.evaluateStrategies("BTCUSDT");
 
         assertThat(signals).hasSize(1);
-        assertThat(signals.getFirst().strategyName()).isEqualTo("Strategy2");
+        assertThat(signals.get(0).strategyName()).isEqualTo("Strategy2");
     }
 }

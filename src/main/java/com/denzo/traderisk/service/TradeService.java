@@ -54,7 +54,7 @@ public class TradeService {
                 request.symbol(),
                 request.quantity(),
                 request.price(),
-                Side.valueOf(request.side().toUpperCase())
+                request.side()
         );
 
         Trade saved = tradeRepository.save(trade);

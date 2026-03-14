@@ -1,11 +1,13 @@
 package com.denzo.traderisk.strategy;
 
+import com.denzo.traderisk.domain.Side;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 
 public record Signal(
         String symbol,
-        String side,          // "BUY" или "SELL"
+        Side side,
         BigDecimal quantity,
         String strategyName,
         Instant timestamp
@@ -14,8 +16,8 @@ public record Signal(
         if (symbol == null || symbol.isBlank()) {
             throw new IllegalArgumentException("Symbol must not be empty");
         }
-        if (!"BUY".equals(side) && !"SELL".equals(side)) {
-            throw new IllegalArgumentException("Side must be BUY or SELL");
+        if (side == null) {
+            throw new IllegalArgumentException("Side must not be null");
         }
         if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Quantity must be positive");

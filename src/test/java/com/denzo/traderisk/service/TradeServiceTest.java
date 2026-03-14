@@ -51,7 +51,7 @@ class TradeServiceTest {
                 "BTCUSDT",
                 BigDecimal.valueOf(2),
                 BigDecimal.valueOf(60000),
-                "BUY"
+                Side.BUY
         );
         Trade savedTrade = new Trade("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000), Side.BUY);
         ReflectionTestUtils.setField(savedTrade, "id", 1L);
@@ -83,7 +83,7 @@ class TradeServiceTest {
                 "BTCUSDT",
                 BigDecimal.ZERO,
                 BigDecimal.valueOf(60000),
-                "BUY"
+                Side.BUY
         );
         assertThrows(IllegalArgumentException.class, () -> tradeService.createTrade(request));
     }
@@ -94,7 +94,7 @@ class TradeServiceTest {
                 "BTCUSDT",
                 BigDecimal.ONE,
                 BigDecimal.ZERO,
-                "BUY"
+                Side.BUY
         );
         assertThrows(IllegalArgumentException.class, () -> tradeService.createTrade(request));
     }
@@ -105,7 +105,7 @@ class TradeServiceTest {
                 "BTCUSDT",
                 BigDecimal.valueOf(6),
                 BigDecimal.valueOf(60000),
-                "BUY"
+                Side.BUY
         );
         when(riskService.checkTrade(anyString(), any(), any()))
                 .thenReturn(RiskCheckResult.rejected("Trade size exceeds limit"));

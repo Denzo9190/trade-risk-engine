@@ -1,22 +1,23 @@
 package com.denzo.traderisk.strategy;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
 public class StrategyService {
 
     private final List<TradingStrategy> strategies;
 
+    public StrategyService(List<TradingStrategy> strategies) {
+        this.strategies = strategies;
+    }
+
     public List<Signal> evaluateStrategies(String symbol) {
-        List<Signal> signals = new ArrayList<>();
-        for (TradingStrategy strategy : strategies) {
-            strategy.generateSignal(symbol).ifPresent(signals::add);
-        }
-        return signals;
+        return strategies.stream()
+                .map(s -> s.generateSignal(symbol))
+                .flatMap(Optional::stream)
+                .toList();
     }
 }

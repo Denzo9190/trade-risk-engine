@@ -1,9 +1,9 @@
 package com.denzo.traderisk.domain;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.AccessLevel;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -41,10 +41,7 @@ public class Trade {
         this.createdAt = Instant.now();
     }
 
-    public Trade(String symbol,
-                 BigDecimal quantity,
-                 BigDecimal price,
-                 Side side) {
+    public Trade(String symbol, BigDecimal quantity, BigDecimal price, Side side) {
         this.symbol = symbol;
         this.quantity = quantity;
         this.price = price;
