@@ -34,8 +34,22 @@ class StrategyServiceTest {
 
     @Test
     void shouldCollectSignalsFromAllStrategies() {
-        Signal signal1 = new Signal("BTCUSDT", Side.BUY, BigDecimal.ONE, "Strategy1", Instant.now());
-        Signal signal2 = new Signal("BTCUSDT", Side.SELL, BigDecimal.valueOf(2), "Strategy2", Instant.now());
+        Signal signal1 = new Signal(
+                "BTCUSDT",
+                Side.BUY,
+                BigDecimal.ONE,
+                BigDecimal.valueOf(60000),
+                "Strategy1",
+                Instant.now()
+        );
+        Signal signal2 = new Signal(
+                "BTCUSDT",
+                Side.SELL,
+                BigDecimal.valueOf(2),
+                BigDecimal.valueOf(61000),
+                "Strategy2",
+                Instant.now()
+        );
 
         when(strategy1.generateSignal(anyString())).thenReturn(Optional.of(signal1));
         when(strategy2.generateSignal(anyString())).thenReturn(Optional.of(signal2));
@@ -49,7 +63,14 @@ class StrategyServiceTest {
     void shouldSkipEmptySignals() {
         when(strategy1.generateSignal(anyString())).thenReturn(Optional.empty());
         when(strategy2.generateSignal(anyString())).thenReturn(Optional.of(
-                new Signal("BTCUSDT", Side.BUY, BigDecimal.ONE, "Strategy2", Instant.now())
+                new Signal(
+                        "BTCUSDT",
+                        Side.BUY,
+                        BigDecimal.ONE,
+                        BigDecimal.valueOf(60000),
+                        "Strategy2",
+                        Instant.now()
+                )
         ));
 
         List<Signal> signals = strategyService.evaluateStrategies("BTCUSDT");

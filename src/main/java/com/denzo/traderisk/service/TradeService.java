@@ -4,6 +4,7 @@ import com.denzo.traderisk.domain.Side;
 import com.denzo.traderisk.domain.Trade;
 import com.denzo.traderisk.dto.CreateTradeRequest;
 import com.denzo.traderisk.dto.RiskCheckResult;
+import com.denzo.traderisk.dto.TradeRequest;
 import com.denzo.traderisk.event.DomainEventPublisher;
 import com.denzo.traderisk.event.TradeExecutedEvent;
 import com.denzo.traderisk.exception.RiskViolationException;
@@ -39,17 +40,19 @@ public class TradeService {
             throw new IllegalArgumentException("Price must be positive");
         }
 
-        // Предторговая проверка рисков
-        RiskCheckResult riskCheck = riskService.checkTrade(
+        // Pre-trade risk check (теперь через TradeRequest)
+        TradeRequest riskRequest = new TradeRequest(
                 request.symbol(),
                 request.quantity(),
-                request.price()
+                request.price(),
+                request.side()
         );
+
+        RiskCheckResult riskCheck = riskService.checkTrade(riskRequest);
         if (!riskCheck.allowed()) {
             throw new RiskViolationException(riskCheck.reason());
         }
 
-        // Создание сущности
         Trade trade = new Trade(
                 request.symbol(),
                 request.quantity(),
@@ -59,7 +62,6 @@ public class TradeService {
 
         Trade saved = tradeRepository.save(trade);
 
-        // Публикация события
         TradeExecutedEvent event = new TradeExecutedEvent(
                 saved.getId(),
                 saved.getSymbol(),

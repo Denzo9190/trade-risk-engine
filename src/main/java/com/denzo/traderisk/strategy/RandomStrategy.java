@@ -13,12 +13,11 @@ public class RandomStrategy implements TradingStrategy {
 
     private final Random random;
 
-    // Конструктор без параметров для продакшена
     public RandomStrategy() {
         this.random = new Random();
     }
 
-    // Конструктор с seed для тестов (можно оставить package-private)
+    // конструктор для тестов
     RandomStrategy(long seed) {
         this.random = new Random(seed);
     }
@@ -26,10 +25,13 @@ public class RandomStrategy implements TradingStrategy {
     @Override
     public Optional<Signal> generateSignal(String symbol) {
         if (random.nextBoolean()) {
+            // генерируем случайную цену в диапазоне 50000–70000
+            BigDecimal price = BigDecimal.valueOf(50000 + random.nextInt(20001));
             return Optional.of(new Signal(
                     symbol,
                     Side.BUY,
                     BigDecimal.ONE,
+                    price,
                     "RandomStrategy",
                     Instant.now()
             ));

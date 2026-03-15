@@ -1,35 +1,48 @@
 package com.denzo.traderisk.service;
 
+import com.denzo.traderisk.config.RiskLimits;
 import com.denzo.traderisk.dto.PortfolioResponse;
+import com.denzo.traderisk.dto.PositionResponse;
 import com.denzo.traderisk.dto.RiskCheckResult;
 import com.denzo.traderisk.dto.TradeRequest;
-import com.denzo.traderisk.risk.RiskRule;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.List;
 
+/**
+ * Сервис предторговой проверки рисков.
+ * Проверяет лимиты размера сделки, позиции и общей экспозиции портфеля.
+ */
 @Service
 @RequiredArgsConstructor
 public class RiskService {
 
-    private final List<RiskRule> rules;          // Spring внедрит все бины, реализующие RiskRule
+    private final PositionService positionService;
     private final PortfolioService portfolioService;
+    private final RiskLimits limits;
 
-    /**
-     * Проверяет сделку на соответствие всем правилам риск-движка.
-     */
-    public RiskCheckResult checkTrade(String symbol, BigDecimal quantity, BigDecimal price) {
-        TradeRequest request = new TradeRequest(symbol, quantity, price, null);
-        PortfolioResponse portfolio = portfolioService.getPortfolio();
-
-        for (RiskRule rule : rules) {
-            RiskCheckResult result = rule.check(request, portfolio);
-            if (!result.allowed()) {
-                return result;
-            }
+    public RiskCheckResult checkTrade(TradeRequest request) {
+        // 1. Проверка размера сделки
+        if (request.quantity().abs().compareTo(limits.maxTradeSize()) > 0) {
+            return RiskCheckResult.rejected("Trade size exceeds limit (max " + limits.maxTradeSize() + ")");
         }
+
+        // 2. Проверка размера позиции после сделки
+        PositionResponse currentPos = positionService.getPosition(request.symbol());
+        BigDecimal newPosition = currentPos.totalQuantity().add(request.quantity());
+        if (newPosition.abs().compareTo(limits.maxPositionSize()) > 0) {
+            return RiskCheckResult.rejected("Position limit exceeded (max " + limits.maxPositionSize() + ")");
+        }
+
+        // 3. Проверка общей экспозиции портфеля после сделки
+        PortfolioResponse portfolio = portfolioService.getPortfolio();
+        BigDecimal tradeExposure = request.quantity().abs().multiply(request.price());
+        BigDecimal newExposure = portfolio.totalExposure().add(tradeExposure);
+        if (newExposure.compareTo(limits.maxPortfolioExposure()) > 0) {
+            return RiskCheckResult.rejected("Portfolio exposure limit exceeded (max $" + limits.maxPortfolioExposure() + ")");
+        }
+
         return RiskCheckResult.ok();
     }
 }

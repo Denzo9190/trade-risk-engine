@@ -1,11 +1,10 @@
 package com.denzo.traderisk.dto;
 
 import com.denzo.traderisk.domain.Side;
-
 import java.math.BigDecimal;
 
 /**
- * Обёртка для данных входящей сделки, используемая правилами риск-движка.
+ * DTO для передачи данных сделки в риск-движок.
  */
 public record TradeRequest(
         String symbol,

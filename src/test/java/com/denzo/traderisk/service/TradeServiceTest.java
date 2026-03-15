@@ -4,6 +4,7 @@ import com.denzo.traderisk.domain.Side;
 import com.denzo.traderisk.domain.Trade;
 import com.denzo.traderisk.dto.CreateTradeRequest;
 import com.denzo.traderisk.dto.RiskCheckResult;
+import com.denzo.traderisk.dto.TradeRequest;
 import com.denzo.traderisk.event.DomainEventPublisher;
 import com.denzo.traderisk.event.TradeExecutedEvent;
 import com.denzo.traderisk.exception.RiskViolationException;
@@ -56,7 +57,7 @@ class TradeServiceTest {
         Trade savedTrade = new Trade("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000), Side.BUY);
         ReflectionTestUtils.setField(savedTrade, "id", 1L);
 
-        when(riskService.checkTrade(anyString(), any(), any()))
+        when(riskService.checkTrade(any(TradeRequest.class)))
                 .thenReturn(RiskCheckResult.ok());
         when(tradeRepository.save(any(Trade.class))).thenReturn(savedTrade);
 
@@ -66,7 +67,7 @@ class TradeServiceTest {
         // then
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo(1L);
-        verify(riskService).checkTrade("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000));
+        verify(riskService).checkTrade(any(TradeRequest.class));
         verify(tradeRepository).save(any(Trade.class));
         verify(domainEventPublisher).publish(eventCaptor.capture());
         TradeExecutedEvent publishedEvent = eventCaptor.getValue();
@@ -107,7 +108,7 @@ class TradeServiceTest {
                 BigDecimal.valueOf(60000),
                 Side.BUY
         );
-        when(riskService.checkTrade(anyString(), any(), any()))
+        when(riskService.checkTrade(any(TradeRequest.class)))
                 .thenReturn(RiskCheckResult.rejected("Trade size exceeds limit"));
 
         RiskViolationException exception = assertThrows(RiskViolationException.class,
