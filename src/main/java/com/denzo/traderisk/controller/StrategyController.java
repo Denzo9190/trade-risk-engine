@@ -14,7 +14,7 @@ import java.util.List;
 public class StrategyController {
 
     private final StrategyService strategyService;
-    private final SignalExecutionService signalExecutionService; // добавлено
+    private final SignalExecutionService signalExecutionService;
 
     @GetMapping("/run")
     public List<Signal> runStrategies(@RequestParam String symbol) {
@@ -23,6 +23,15 @@ public class StrategyController {
 
     @PostMapping("/execute")
     public void executeStrategies(@RequestParam String symbol) {
+        List<Signal> signals = strategyService.evaluateStrategies(symbol);
+        signalExecutionService.executeSignals(signals);
+    }
+
+    /**
+     * Ручной однократный запуск стратегий (для тестирования).
+     */
+    @PostMapping("/run-once")
+    public void runOnce(@RequestParam String symbol) {
         List<Signal> signals = strategyService.evaluateStrategies(symbol);
         signalExecutionService.executeSignals(signals);
     }
