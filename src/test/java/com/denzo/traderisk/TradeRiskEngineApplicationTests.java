@@ -8,6 +8,6 @@ class TradeRiskEngineApplicationTests {
 
 	@Test
 	void contextLoads() {
+		// просто проверяем, что контекст поднимается
 	}
-
 }

@@ -1,6 +1,8 @@
 package com.denzo.traderisk.strategy;
 
 import com.denzo.traderisk.domain.Side;
+import com.denzo.traderisk.market.MarketDataService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -12,21 +14,24 @@ import java.util.Random;
 public class RandomStrategy implements TradingStrategy {
 
     private final Random random;
+    private final MarketDataService marketDataService;
 
-    public RandomStrategy() {
+    @Autowired
+    public RandomStrategy(MarketDataService marketDataService) {
+        this.marketDataService = marketDataService;
         this.random = new Random();
     }
 
     // конструктор для тестов
-    RandomStrategy(long seed) {
+    RandomStrategy(MarketDataService marketDataService, long seed) {
+        this.marketDataService = marketDataService;
         this.random = new Random(seed);
     }
 
     @Override
     public Optional<Signal> generateSignal(String symbol) {
         if (random.nextBoolean()) {
-            // генерируем случайную цену в диапазоне 50000–70000
-            BigDecimal price = BigDecimal.valueOf(50000 + random.nextInt(20001));
+            BigDecimal price = marketDataService.getPrice(symbol);
             return Optional.of(new Signal(
                     symbol,
                     Side.BUY,

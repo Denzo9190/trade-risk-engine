@@ -8,8 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.UUID;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -21,21 +20,20 @@ class TradeRepositoryIntegrationTest {
 
     @Test
     void shouldSaveAndLoadTrade() {
-
         Trade trade = new Trade(
-                "AAPL",
-                new BigDecimal("10"),
-                new BigDecimal("150.50"),
+                "BTCUSDT",
+                BigDecimal.valueOf(2),
+                BigDecimal.valueOf(60000),
                 Side.BUY
         );
 
         Trade saved = tradeRepository.save(trade);
 
-        assertThat(saved.getId()).isNotNull();
-
-        var loaded = tradeRepository.findById(saved.getId());
-
+        Optional<Trade> loaded = tradeRepository.findById(saved.getId());
         assertThat(loaded).isPresent();
-        assertThat(loaded.get().getSymbol()).isEqualTo("AAPL");
+        assertThat(loaded.get().getSymbol()).isEqualTo("BTCUSDT");
+        assertThat(loaded.get().getQuantity()).isEqualByComparingTo("2");
+        assertThat(loaded.get().getPrice()).isEqualByComparingTo("60000");
+        assertThat(loaded.get().getSide()).isEqualTo(Side.BUY);
     }
 }

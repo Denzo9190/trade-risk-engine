@@ -17,6 +17,8 @@ import java.math.BigDecimal;
 @Service
 @RequiredArgsConstructor
 public class RiskService {
+    // TODO (Day 21–22): добавить правило отклонения цены
+    //   if (abs(signal.price - marketPrice) / marketPrice > threshold) -> reject
 
     private final PositionService positionService;
     private final PortfolioService portfolioService;

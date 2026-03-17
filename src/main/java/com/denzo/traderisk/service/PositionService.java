@@ -5,6 +5,7 @@ import com.denzo.traderisk.config.FinancialConstants;
 import com.denzo.traderisk.domain.Side;
 import com.denzo.traderisk.domain.Trade;
 import com.denzo.traderisk.dto.PositionResponse;
+import com.denzo.traderisk.market.MarketDataService;
 import com.denzo.traderisk.math.FinancialMath;
 import com.denzo.traderisk.repository.TradeRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,11 +20,11 @@ import java.util.List;
 public class PositionService {
 
     private final TradeRepository tradeRepository;
-    private final MarketPriceService marketPriceService;
+    private final MarketDataService marketDataService;
     private final PositionCache positionCache;
 
     public PositionResponse getPosition(String symbol) {
-        return positionCache.computeIfAbsent(symbol, s -> calculatePosition(s));
+        return positionCache.computeIfAbsent(symbol, this::calculatePosition);
     }
 
     private PositionResponse calculatePosition(String symbol) {
@@ -63,7 +64,7 @@ public class PositionService {
             signedQty = newSignedQty;
         }
 
-        BigDecimal currentPrice = marketPriceService.getCurrentPrice(symbol);
+        BigDecimal currentPrice = marketDataService.getPrice(symbol);
 
         BigDecimal unrealisedPnl;
         if (signedQty.signum() > 0) {
@@ -81,7 +82,6 @@ public class PositionService {
     }
 
     public void updatePosition(String symbol, BigDecimal quantity, BigDecimal price) {
-        // при получении события просто инвалидируем кэш – при следующем запросе позиция пересчитается
         positionCache.remove(symbol);
     }
 }
