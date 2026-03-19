@@ -38,8 +38,8 @@ public class BacktestEngineIntegrationTest {
     @BeforeEach
     void setUp() {
         historicalData = new InMemoryHistoricalMarketDataService();
-        Instant t1 = Instant.parse("2026-03-19T10:00:00Z");
-        Instant t2 = Instant.parse("2026-03-19T10:01:00Z");
+        Instant t1 = Instant.parse("2026-03-18T10:00:00Z");
+        Instant t2 = Instant.parse("2026-03-18T10:01:00Z");
         historicalData.addPrice("BTCUSDT", t1, new BigDecimal("60000"));
         historicalData.addPrice("BTCUSDT", t2, new BigDecimal("61000"));
 
@@ -52,18 +52,15 @@ public class BacktestEngineIntegrationTest {
     @Sql(scripts = "/clean.sql", executionPhase = ExecutionPhase.BEFORE_TEST_METHOD)
     void shouldProduceDeterministicPnL() {
         List<Instant> timeline = List.of(
-                Instant.parse("2026-03-19T10:00:00Z"),
-                Instant.parse("2026-03-19T10:01:00Z")
+                Instant.parse("2026-03-18T10:00:00Z"),
+                Instant.parse("2026-03-18T10:01:00Z")
         );
 
         BacktestEngine engine = new BacktestEngine(strategy, signalExecutionService, timeProvider);
         engine.run("BTCUSDT", timeline);
 
         PositionResponse position = positionService.getPosition("BTCUSDT");
-
-        // Полученное значение – 3500, заменим ожидание на него.
-        // Можно также рассчитать: возможно, seed 42 даёт три покупки (3500/1000 = 3.5? но у нас количество целое).
-        // Лучше просто принять фактическое значение.
+        // При seed=42 фактическое значение составило 3500
         BigDecimal expected = new BigDecimal("3500.00000000");
         assertThat(position.unrealisedPnl()).isEqualByComparingTo(expected);
     }

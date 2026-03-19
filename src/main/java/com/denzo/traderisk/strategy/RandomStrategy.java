@@ -25,7 +25,7 @@ public class RandomStrategy implements TradingStrategy {
         this.random = new Random();
     }
 
-    // конструктор для тестов (с seed)
+    // конструктор для тестов (публичный для доступа из пакета backtest)
     public RandomStrategy(MarketDataService marketDataService, TimeProvider timeProvider, long seed) {
         this.marketDataService = marketDataService;
         this.timeProvider = timeProvider;
@@ -42,7 +42,7 @@ public class RandomStrategy implements TradingStrategy {
                     BigDecimal.ONE,
                     price,
                     "RandomStrategy",
-                    timeProvider.now() // заменяем timeProvider.now()
+                    timeProvider.now()
             ));
         }
         return Optional.empty();

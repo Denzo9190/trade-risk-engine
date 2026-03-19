@@ -30,8 +30,7 @@ class RandomStrategyTest {
         RandomStrategy strategy = new RandomStrategy(marketDataService, timeProvider, 42L);
         when(marketDataService.getPrice(anyString())).thenReturn(new BigDecimal("63500"));
 
-        // Для теста фиксируем время
-        Instant fixedTime = Instant.parse("2026-03-19T10:00:00Z");
+        Instant fixedTime = Instant.parse("2026-03-18T10:00:00Z");
         when(timeProvider.now()).thenReturn(fixedTime);
 
         Optional<Signal> result = strategy.generateSignal("BTCUSDT");
