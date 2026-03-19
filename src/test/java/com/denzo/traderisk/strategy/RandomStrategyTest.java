@@ -2,12 +2,14 @@ package com.denzo.traderisk.strategy;
 
 import com.denzo.traderisk.domain.Side;
 import com.denzo.traderisk.market.MarketDataService;
+import com.denzo.traderisk.time.TimeProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,10 +22,17 @@ class RandomStrategyTest {
     @Mock
     private MarketDataService marketDataService;
 
+    @Mock
+    private TimeProvider timeProvider;
+
     @Test
     void shouldGenerateSignalWithPriceFromMarketData() {
-        RandomStrategy strategy = new RandomStrategy(marketDataService, 42L);
+        RandomStrategy strategy = new RandomStrategy(marketDataService, timeProvider, 42L);
         when(marketDataService.getPrice(anyString())).thenReturn(new BigDecimal("63500"));
+
+        // Для теста фиксируем время
+        Instant fixedTime = Instant.parse("2026-03-19T10:00:00Z");
+        when(timeProvider.now()).thenReturn(fixedTime);
 
         Optional<Signal> result = strategy.generateSignal("BTCUSDT");
         assertThat(result).isPresent();
@@ -32,5 +41,6 @@ class RandomStrategyTest {
         assertThat(signal.symbol()).isEqualTo("BTCUSDT");
         assertThat(signal.side()).isEqualTo(Side.BUY);
         assertThat(signal.quantity()).isEqualByComparingTo("1");
+        assertThat(signal.timestamp()).isEqualTo(fixedTime);
     }
 }

@@ -36,7 +36,7 @@ public class StrategyRunner {
      * Запускает все стратегии для заданного символа и исполняет сигналы.
      * Периодичность задаётся в application.yml (strategy.runner.interval).
      */
-    @Scheduled(fixedRateString = "${strategy.runner.interval}")
+    //@Scheduled(fixedRateString = "${strategy.runner.interval}")
     public void runStrategies() {
         // На данный момент захардкожен символ BTCUSDT.
         // В будущем можно брать список символов из конфигурации.

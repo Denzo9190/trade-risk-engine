@@ -2,6 +2,7 @@ package com.denzo.traderisk.strategy;
 
 import com.denzo.traderisk.domain.Side;
 import com.denzo.traderisk.market.MarketDataService;
+import com.denzo.traderisk.time.TimeProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -15,16 +16,19 @@ public class RandomStrategy implements TradingStrategy {
 
     private final Random random;
     private final MarketDataService marketDataService;
+    private final TimeProvider timeProvider;
 
     @Autowired
-    public RandomStrategy(MarketDataService marketDataService) {
+    public RandomStrategy(MarketDataService marketDataService, TimeProvider timeProvider) {
         this.marketDataService = marketDataService;
+        this.timeProvider = timeProvider;
         this.random = new Random();
     }
 
-    // конструктор для тестов
-    RandomStrategy(MarketDataService marketDataService, long seed) {
+    // конструктор для тестов (с seed)
+    public RandomStrategy(MarketDataService marketDataService, TimeProvider timeProvider, long seed) {
         this.marketDataService = marketDataService;
+        this.timeProvider = timeProvider;
         this.random = new Random(seed);
     }
 
@@ -38,7 +42,7 @@ public class RandomStrategy implements TradingStrategy {
                     BigDecimal.ONE,
                     price,
                     "RandomStrategy",
-                    Instant.now()
+                    timeProvider.now() // заменяем timeProvider.now()
             ));
         }
         return Optional.empty();
