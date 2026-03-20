@@ -36,7 +36,6 @@ public class SignalExecutionService {
      * @throws RiskViolationException если проверка риска не пройдена
      */
     public void executeSignal(Signal signal) {
-        System.out.println(">>> SignalExecutionService: executing signal for " + signal.symbol() + " price=" + signal.price());
         // 1. Создаём запрос для риск-движка
         TradeRequest riskRequest = new TradeRequest(
                 signal.symbol(),
@@ -47,9 +46,7 @@ public class SignalExecutionService {
 
         // 2. Проверяем риск
         RiskCheckResult riskCheck = riskService.checkTrade(riskRequest);
-        System.out.println(">>> SignalExecutionService: riskCheck.allowed=" + riskCheck.allowed());
         if (!riskCheck.allowed()) {
-            System.out.println(">>> SignalExecutionService: risk rejected: " + riskCheck.reason());
             throw new RiskViolationException(riskCheck.reason());
         }
 
@@ -63,7 +60,6 @@ public class SignalExecutionService {
 
         // 4. Исполняем сделку
         Trade trade = tradeService.createTrade(tradeRequest);
-        System.out.println(">>> SignalExecutionService: trade created, id=" + trade.getId());
     }
 
     /**

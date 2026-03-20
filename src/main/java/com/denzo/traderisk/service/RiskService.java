@@ -25,10 +25,8 @@ public class RiskService {
     private final RiskLimits limits;
 
     public RiskCheckResult checkTrade(TradeRequest request) {
-        System.out.println(">>> RiskService: checking trade " + request.symbol() + " qty=" + request.quantity() + " price=" + request.price());
         // 1. Проверка размера сделки
         if (request.quantity().abs().compareTo(limits.maxTradeSize()) > 0) {
-            System.out.println(">>> RiskService: passed");
             return RiskCheckResult.rejected("Trade size exceeds limit (max " + limits.maxTradeSize() + ")");
         }
 
@@ -36,7 +34,6 @@ public class RiskService {
         PositionResponse currentPos = positionService.getPosition(request.symbol());
         BigDecimal newPosition = currentPos.totalQuantity().add(request.quantity());
         if (newPosition.abs().compareTo(limits.maxPositionSize()) > 0) {
-            System.out.println(">>> RiskService: passed");
             return RiskCheckResult.rejected("Position limit exceeded (max " + limits.maxPositionSize() + ")");
         }
 
@@ -45,7 +42,6 @@ public class RiskService {
         BigDecimal tradeExposure = request.quantity().abs().multiply(request.price());
         BigDecimal newExposure = portfolio.totalExposure().add(tradeExposure);
         if (newExposure.compareTo(limits.maxPortfolioExposure()) > 0) {
-            System.out.println(">>> RiskService: passed");
             return RiskCheckResult.rejected("Portfolio exposure limit exceeded (max $" + limits.maxPortfolioExposure() + ")");
         }
 

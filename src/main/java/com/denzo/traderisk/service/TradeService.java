@@ -52,7 +52,6 @@ public class TradeService {
         if (!riskCheck.allowed()) {
             throw new RiskViolationException(riskCheck.reason());
         }
-        System.out.println(">>> TradeService: creating trade " + request.symbol() + " qty=" + request.quantity() + " price=" + request.price());
         Trade trade = new Trade(
                 request.symbol(),
                 request.quantity(),
@@ -61,7 +60,6 @@ public class TradeService {
         );
 
         Trade saved = tradeRepository.save(trade);
-        System.out.println(">>> TradeService: trade saved, id=" + saved.getId());
         TradeExecutedEvent event = new TradeExecutedEvent(
                 saved.getId(),
                 saved.getSymbol(),
@@ -69,7 +67,6 @@ public class TradeService {
                 saved.getPrice(),
                 saved.getSide()
         );
-        System.out.println(">>> TradeService: publishing event for trade " + saved.getId());
         domainEventPublisher.publish(event);
 
         return saved;
@@ -81,8 +78,6 @@ public class TradeService {
      * @return список всех сделок
      */
     public List<Trade> getAll() {
-        List<Trade> trades = tradeRepository.findAll();
-        System.out.println(">>> TradeService.getAll: " + trades.size() + " trades");
-        return trades;
+        return tradeRepository.findAll();
     }
 }

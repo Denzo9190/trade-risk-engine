@@ -24,14 +24,11 @@ public class PositionService {
     private final PositionCache positionCache;
 
     public PositionResponse getPosition(String symbol) {
-        System.out.println(">>> PositionService.getPosition: " + symbol);
         return positionCache.computeIfAbsent(symbol, this::calculatePosition);
     }
 
     private PositionResponse calculatePosition(String symbol) {
         List<Trade> trades = tradeRepository.findBySymbolOrderByIdAsc(symbol);
-        System.out.println(">>> PositionService.calculatePosition: trades count = " + trades.size());
-        trades.forEach(t -> System.out.println("   trade: id=" + t.getId() + " side=" + t.getSide() + " qty=" + t.getQuantity() + " price=" + t.getPrice()));
         BigDecimal signedQty = BigDecimal.ZERO;
         BigDecimal avgPrice = BigDecimal.ZERO;
 
@@ -67,7 +64,6 @@ public class PositionService {
         }
 
         BigDecimal currentPrice = marketDataService.getPrice(symbol);
-        System.out.println(">>> PositionService.calculatePosition: currentPrice=" + currentPrice);
         BigDecimal unrealisedPnl;
         if (signedQty.signum() > 0) {
             unrealisedPnl = FinancialMath.multiply(currentPrice.subtract(avgPrice), signedQty);
@@ -84,7 +80,6 @@ public class PositionService {
     }
 
     public void updatePosition(String symbol, BigDecimal quantity, BigDecimal price) {
-        System.out.println(">>> PositionService.updatePosition: symbol=" + symbol + " qty=" + quantity + " price=" + price);
         positionCache.remove(symbol);
     }
 }

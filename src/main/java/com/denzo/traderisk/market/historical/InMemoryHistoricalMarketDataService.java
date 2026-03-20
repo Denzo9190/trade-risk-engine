@@ -33,7 +33,6 @@ public class InMemoryHistoricalMarketDataService implements HistoricalMarketData
         if (entry == null) {
             throw new MarketDataNotFoundException(symbol + " at " + timestamp);
         }
-        System.out.println(">>> Historical: found price " + entry.getValue() + " for " + symbol + " at " + timestamp);
         return entry.getValue();
     }
 }

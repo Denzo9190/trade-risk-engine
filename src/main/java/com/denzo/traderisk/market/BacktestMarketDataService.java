@@ -22,8 +22,6 @@ public class BacktestMarketDataService implements MarketDataService {
 
     @Override
     public BigDecimal getPrice(String symbol) {
-        BigDecimal price = historical.getPrice(symbol, timeProvider.now());
-        System.out.println(">>> BacktestMarketDataService: price for " + symbol + " at " + timeProvider.now() + " = " + price);
-        return price;
+        return historical.getPrice(symbol, timeProvider.now());
     }
 }

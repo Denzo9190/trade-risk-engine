@@ -14,7 +14,6 @@ public class PositionEventHandler {
 
     @EventListener
     public void handleTradeExecuted(TradeExecutedEvent event) {
-        System.out.println(">>> PositionEventHandler: received event for trade " + event.tradeId());
         positionService.updatePosition(event.symbol(), event.quantity(), event.price());
     }
 }
