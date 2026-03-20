@@ -1,6 +1,7 @@
 package com.denzo.traderisk.service.execution;
 
 import com.denzo.traderisk.domain.Side;
+import com.denzo.traderisk.domain.Trade;
 import com.denzo.traderisk.dto.CreateTradeRequest;
 import com.denzo.traderisk.dto.RiskCheckResult;
 import com.denzo.traderisk.dto.TradeRequest;
@@ -16,6 +17,7 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -60,6 +62,10 @@ class SignalExecutionServiceTest {
         when(riskService.checkTrade(any(TradeRequest.class)))
                 .thenReturn(RiskCheckResult.ok());
 
+        Trade mockTrade = new Trade("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000), Side.BUY);
+        ReflectionTestUtils.setField(mockTrade, "id", 1L);
+        when(tradeService.createTrade(any(CreateTradeRequest.class))).thenReturn(mockTrade);
+
         signalExecutionService.executeSignal(validSignal);
 
         verify(riskService).checkTrade(any(TradeRequest.class));
@@ -96,6 +102,14 @@ class SignalExecutionServiceTest {
 
         when(riskService.checkTrade(any(TradeRequest.class)))
                 .thenReturn(RiskCheckResult.ok());
+
+        Trade mockTrade1 = new Trade("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000), Side.BUY);
+        ReflectionTestUtils.setField(mockTrade1, "id", 1L);
+        Trade mockTrade2 = new Trade("ETHUSDT", BigDecimal.valueOf(5), BigDecimal.valueOf(3000), Side.SELL);
+        ReflectionTestUtils.setField(mockTrade2, "id", 2L);
+        when(tradeService.createTrade(any(CreateTradeRequest.class)))
+                .thenReturn(mockTrade1)
+                .thenReturn(mockTrade2);
 
         signalExecutionService.executeSignals(List.of(validSignal, signal2));
 
