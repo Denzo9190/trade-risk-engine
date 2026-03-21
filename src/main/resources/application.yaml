@@ -26,6 +26,7 @@ risk:
   max-trade-size: 5
   max-position-size: 10
   max-portfolio-exposure: 500000
+  max-price-deviation: 0.01   # 1%
 
 strategy:
   runner:

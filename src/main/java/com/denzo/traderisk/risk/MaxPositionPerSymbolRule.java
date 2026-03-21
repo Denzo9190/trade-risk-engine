@@ -27,10 +27,10 @@ public class MaxPositionPerSymbolRule implements RiskRule {
         BigDecimal currentQty = optPosition.map(PositionResponse::totalQuantity).orElse(BigDecimal.ZERO);
         BigDecimal newQty = currentQty.add(trade.quantity());
 
-        if (newQty.abs().compareTo(limits.maxPositionSize()) > 0) {
+        if (newQty.abs().compareTo(limits.getMaxPortfolioExposure()) > 0) {
             return RiskCheckResult.rejected(
                     "Position limit exceeded for " + trade.symbol() +
-                            " (max " + limits.maxPositionSize() + ")"
+                            " (max " + limits.getMaxPortfolioExposure() + ")"
             );
         }
         return RiskCheckResult.ok();

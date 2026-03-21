@@ -1,48 +1,76 @@
 package com.denzo.traderisk.service;
 
 import com.denzo.traderisk.config.RiskLimits;
-import com.denzo.traderisk.dto.PortfolioResponse;
-import com.denzo.traderisk.dto.PositionResponse;
-import com.denzo.traderisk.dto.RiskCheckResult;
-import com.denzo.traderisk.dto.TradeRequest;
+import com.denzo.traderisk.dto.*;
+import com.denzo.traderisk.market.MarketDataNotFoundException;
+import com.denzo.traderisk.market.MarketDataService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Locale;
 
-/**
- * Сервис предторговой проверки рисков.
- * Проверяет лимиты размера сделки, позиции и общей экспозиции портфеля.
- */
 @Service
 @RequiredArgsConstructor
 public class RiskService {
-    // TODO (Day 21–22): добавить правило отклонения цены
-    //   if (abs(signal.price - marketPrice) / marketPrice > threshold) -> reject
+
+    private static final Logger log = LoggerFactory.getLogger(RiskService.class);
+    private static final BigDecimal PERCENT = BigDecimal.valueOf(100);
 
     private final PositionService positionService;
     private final PortfolioService portfolioService;
+    private final MarketDataService marketDataService;
     private final RiskLimits limits;
 
     public RiskCheckResult checkTrade(TradeRequest request) {
-        // 1. Проверка размера сделки
-        if (request.quantity().abs().compareTo(limits.maxTradeSize()) > 0) {
-            return RiskCheckResult.rejected("Trade size exceeds limit (max " + limits.maxTradeSize() + ")");
+        // 1. Проверка цены (самая дешёвая)
+        BigDecimal marketPrice;
+        try {
+            marketPrice = marketDataService.getPrice(request.symbol());
+        } catch (MarketDataNotFoundException e) {
+            log.warn("Market data not found for {}: {}", request.symbol(), e.getMessage());
+            return RiskCheckResult.rejected("Market price unavailable for " + request.symbol());
+        }
+        if (marketPrice == null || marketPrice.compareTo(BigDecimal.ZERO) == 0) {
+            return RiskCheckResult.rejected("Market price is zero or null for " + request.symbol());
         }
 
-        // 2. Проверка размера позиции после сделки
+        BigDecimal deviation = request.price()
+                .subtract(marketPrice)
+                .abs()
+                .divide(marketPrice, 6, RoundingMode.HALF_UP);
+
+        if (deviation.compareTo(limits.getMaxPriceDeviation()) > 0) {
+            String reason = String.format(Locale.US,
+                    "Price deviation too high: signal=%.2f, market=%.2f, deviation=%.4f%%",
+                    request.price().doubleValue(),
+                    marketPrice.doubleValue(),
+                    deviation.multiply(PERCENT).doubleValue()
+            );
+            return RiskCheckResult.rejected(reason);
+        }
+
+        // 2. Проверка размера сделки
+        if (request.quantity().abs().compareTo(limits.getMaxTradeSize()) > 0) {
+            return RiskCheckResult.rejected("Trade size exceeds limit (max " + limits.getMaxTradeSize() + ")");
+        }
+
+        // 3. Проверка размера позиции после сделки
         PositionResponse currentPos = positionService.getPosition(request.symbol());
         BigDecimal newPosition = currentPos.totalQuantity().add(request.quantity());
-        if (newPosition.abs().compareTo(limits.maxPositionSize()) > 0) {
-            return RiskCheckResult.rejected("Position limit exceeded (max " + limits.maxPositionSize() + ")");
+        if (newPosition.abs().compareTo(limits.getMaxPositionSize()) > 0) {
+            return RiskCheckResult.rejected("Position limit exceeded (max " + limits.getMaxPositionSize() + ")");
         }
 
-        // 3. Проверка общей экспозиции портфеля после сделки
+        // 4. Проверка общей экспозиции портфеля
         PortfolioResponse portfolio = portfolioService.getPortfolio();
         BigDecimal tradeExposure = request.quantity().abs().multiply(request.price());
         BigDecimal newExposure = portfolio.totalExposure().add(tradeExposure);
-        if (newExposure.compareTo(limits.maxPortfolioExposure()) > 0) {
-            return RiskCheckResult.rejected("Portfolio exposure limit exceeded (max $" + limits.maxPortfolioExposure() + ")");
+        if (newExposure.compareTo(limits.getMaxPortfolioExposure()) > 0) {
+            return RiskCheckResult.rejected("Portfolio exposure limit exceeded (max $" + limits.getMaxPortfolioExposure() + ")");
         }
 
         return RiskCheckResult.ok();

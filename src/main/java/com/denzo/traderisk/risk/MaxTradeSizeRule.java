@@ -17,9 +17,9 @@ public class MaxTradeSizeRule implements RiskRule {
 
     @Override
     public RiskCheckResult check(TradeRequest trade, PortfolioResponse portfolio) {
-        if (trade.quantity().abs().compareTo(limits.maxTradeSize()) > 0) {
+        if (trade.quantity().abs().compareTo(limits.getMaxTradeSize()) > 0) {
             return RiskCheckResult.rejected(
-                    "Trade size exceeds limit (max " + limits.maxTradeSize() + ")"
+                    "Trade size exceeds limit (max " + limits.getMaxTradeSize() + ")"
             );
         }
         return RiskCheckResult.ok();

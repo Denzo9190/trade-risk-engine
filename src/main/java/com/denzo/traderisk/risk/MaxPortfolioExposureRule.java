@@ -21,9 +21,9 @@ public class MaxPortfolioExposureRule implements RiskRule {
         BigDecimal tradeExposure = trade.quantity().abs().multiply(trade.price());
         BigDecimal newExposure = currentExposure.add(tradeExposure);
 
-        if (newExposure.compareTo(limits.maxPortfolioExposure()) > 0) {
+        if (newExposure.compareTo(limits.getMaxPortfolioExposure()) > 0) {
             return RiskCheckResult.rejected(
-                    "Portfolio exposure limit exceeded (max $" + limits.maxPortfolioExposure() + ")"
+                    "Portfolio exposure limit exceeded (max $" + limits.getMaxPortfolioExposure() + ")"
             );
         }
         return RiskCheckResult.ok();
