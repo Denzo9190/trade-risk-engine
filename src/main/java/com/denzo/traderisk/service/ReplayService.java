@@ -20,10 +20,12 @@ public class ReplayService {
         // В реальной системе нужно сначала очистить все агрегаты.
         for (DomainEvent event : eventStore.getAll()) {
             if (event instanceof TradeExecutedEvent trade) {
-                // Воспроизводим логику обработки сделки
-                positionService.updatePosition(trade.symbol(), trade.quantity(), trade.price());
+                positionService.updatePosition(
+                        trade.symbol(),
+                        trade.executedQuantity(),
+                        trade.executedPrice()
+                );
                 realisedPnlService.calculateRealisedPnl(trade.symbol());
-                // ledger записывается через слушателя событий, поэтому его не трогаем
             }
         }
     }

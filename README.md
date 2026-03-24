@@ -3,6 +3,28 @@
 A backend engine for deterministic trade processing, PnL accounting, portfolio analytics and audit logging.  
 Designed as a core component for algorithmic trading systems, investment platforms, and arbitrage engines.
 
+```mermaid
+flowchart LR
+    Strategy --> Signal
+    Signal --> Risk
+    Risk --> Execution
+    Execution --> TradeEvent
+    TradeEvent --> Position
+    TradeEvent --> PnL
+    TradeEvent --> Ledger
+
+    Position --> Portfolio
+    PnL --> Portfolio
+
+    MarketData --> Strategy
+    MarketData --> Risk
+    MarketData --> Portfolio
+```
+## Development Updates
+
+Development progress and architecture notes are published here:
+Telegram: https://t.me/denzo_rebuild
+
 ## Features
 
 - **Deterministic trade processing** – order‑invariant results via fixed sort (`ORDER BY id`)
@@ -76,12 +98,62 @@ API[Trade API] -->|create| Event[TradeExecutedEvent]
     PosService --> Portfolio[PortfolioService]
     PnLService --> Portfolio
 ```
+Detailed architecture documentation:
+docs/architecture/system-overview.md
+
+## Architecture Decisions
+
+Key architectural choices are documented using ADR.
+
+See:
+
+docs/adr/
+
+Examples:
+
+- deterministic trade processing
+- event-driven trade pipeline
+- unified live/backtest execution
+- modular risk engine
+
 ## Engineering Principles
 
 - **Deterministic processing** – trades always processed in fixed order (`ORDER BY id`) to ensure reproducible results.
 - **Financial precision** – all arithmetic routed through `FinancialMath`, guaranteeing uniform rounding and scale.
 - **Auditability** – every state change recorded in immutable `Ledger`, enabling full traceability.
 - **Layered architecture** – clear separation between API, domain, services, and persistence.
+
+## Core Components
+
+The engine consists of several core subsystems:
+
+- Trade Engine — deterministic trade processing
+- Position Engine — trade aggregation and average price
+- PnL Engine — realised and unrealised PnL
+- Ledger — immutable accounting log
+- Portfolio Engine — portfolio aggregation
+- Risk Engine — pre-trade validation
+- Strategy Engine — signal generation
+- Backtesting Engine — deterministic historical replay
+
+## Deterministic Execution
+
+The engine guarantees deterministic trade processing.
+
+This means that identical trade sequences always produce identical results.
+
+To guarantee determinism the system enforces:
+
+- fixed trade ordering (`ORDER BY id`)
+- centralized financial rounding
+- immutable ledger
+- event replay capability
+
+Determinism is critical for:
+
+- financial audit
+- backtesting reliability
+- reproducible simulations
 
 ## API
 
@@ -148,11 +220,19 @@ Application will be available at `http://localhost:8080`.
 
 ## Future Improvements
 
-- Real‑time market data (WebSocket/Kafka)
-- Risk engine (exposure limits, drawdown)
-- Streaming trade ingestion
-- Multi‑asset support
-- High‑load optimisations (caching, partitioning)
+- Advanced risk controls (drawdown limits, volatility filters)
+- Execution slippage modelling
+- Real-time market data ingestion
+- Multi-asset portfolio support
+- High-load optimisation (caching, partitioning)
+
+## Documentation
+
+Additional project documentation:
+- Architecture overview: `docs/architecture/system-overview.md`
+- Architecture decisions: `docs/adr/`
+- Configuration reference: `docs/operations/configuration.md`
+- Monthly development snapshots: `docs/Monthly_Snapshots.txt`
 
 ## License
 

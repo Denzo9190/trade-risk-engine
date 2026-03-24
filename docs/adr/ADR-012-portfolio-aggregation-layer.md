@@ -1,21 +1,30 @@
-# ADR-012 — Trade Ledger
+# ADR-012 — Portfolio Aggregation Layer
 
-Status: Accepted
-Date: 2026-03-09
+Status: Accepted  
+Date: 2026-03-10
 
 ## Context
 
-System requires auditability and traceability.
+Users require consolidated portfolio view across all instruments.
+
+Calculating portfolio metrics manually from individual positions
+is inefficient.
 
 ## Decision
 
-Introduce LedgerEntry entity
-and LedgerService.
+Introduce Portfolio Engine.
 
-Every state-changing operation
-must create a ledger record.
+Portfolio aggregates:
+
+- all positions
+- total exposure
+- realised PnL
+- unrealised PnL
 
 ## Consequences
 
-Full trade history traceability.
-Supports future compliance and audit.
+Positive:
+
+- portfolio-level analytics
+- simplified client API
+- foundation for risk management

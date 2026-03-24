@@ -18,12 +18,6 @@ public class TradeController {
 
     private final TradeService tradeService;
 
-    @PostMapping
-    public ResponseEntity<Trade> create(@Valid @RequestBody CreateTradeRequest request) {
-        Trade trade = tradeService.createTrade(request);
-        return ResponseEntity.ok(trade);
-    }
-
     @GetMapping
     public ResponseEntity<List<Trade>> getAll() {
         return ResponseEntity.ok(tradeService.getAll());

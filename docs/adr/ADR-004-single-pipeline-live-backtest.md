@@ -1,15 +1,24 @@
-# ADR-004 — Daily Continuity Rule
+# ADR-004 — Unified Pipeline for Live and Backtest
 
-Status: Accepted
+Status: Accepted  
+Date: 2026-03-18
+
+## Context
+
+Separate pipelines for backtesting and live trading lead to logic divergence.
 
 ## Decision
 
-If a day in the execution model is missed,
-it must be restored through real measurable work.
+Backtesting uses the same execution pipeline.
 
-The restoration must be documented in Monthly Snapshots
-and public execution log.
+Only two abstractions differ:
 
-## Rationale
+TimeProvider  
+MarketDataService
 
-Maintains long-term discipline and continuity.
+## Consequences
+
+Positive:
+
+- Backtest equals production logic
+- Strategy validation reliability

@@ -6,6 +6,7 @@ import com.denzo.traderisk.dto.CreateTradeRequest;
 import com.denzo.traderisk.dto.RiskCheckResult;
 import com.denzo.traderisk.dto.TradeRequest;
 import com.denzo.traderisk.exception.RiskViolationException;
+import com.denzo.traderisk.execution.ExecutionService;
 import com.denzo.traderisk.service.RiskService;
 import com.denzo.traderisk.service.TradeService;
 import com.denzo.traderisk.strategy.Signal;
@@ -35,85 +36,47 @@ class SignalExecutionServiceTest {
     private RiskService riskService;
 
     @Mock
-    private TradeService tradeService;
+    private ExecutionService executionService;  // вместо TradeService
 
     @InjectMocks
     private SignalExecutionService signalExecutionService;
 
-    @Captor
-    private ArgumentCaptor<CreateTradeRequest> tradeRequestCaptor;
-
-    private Signal validSignal;
-
-    @BeforeEach
-    void setUp() {
-        validSignal = new Signal(
-                "BTCUSDT",
-                Side.BUY,
-                BigDecimal.valueOf(2),
-                BigDecimal.valueOf(60000),
-                "TestStrategy",
-                Instant.now()
-        );
-    }
-
     @Test
     void shouldExecuteSignalWhenRiskPasses() {
+        Signal signal = new Signal("BTCUSDT", Side.BUY, BigDecimal.valueOf(2), BigDecimal.valueOf(63500), "TestStrategy", Instant.now());
         when(riskService.checkTrade(any(TradeRequest.class)))
                 .thenReturn(RiskCheckResult.ok());
 
-        Trade mockTrade = new Trade("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000), Side.BUY);
-        ReflectionTestUtils.setField(mockTrade, "id", 1L);
-        when(tradeService.createTrade(any(CreateTradeRequest.class))).thenReturn(mockTrade);
-
-        signalExecutionService.executeSignal(validSignal);
+        signalExecutionService.executeSignal(signal);
 
         verify(riskService).checkTrade(any(TradeRequest.class));
-        verify(tradeService).createTrade(tradeRequestCaptor.capture());
-        CreateTradeRequest request = tradeRequestCaptor.getValue();
-        assertThat(request.symbol()).isEqualTo("BTCUSDT");
-        assertThat(request.quantity()).isEqualByComparingTo("2");
-        assertThat(request.price()).isEqualByComparingTo("60000");
-        assertThat(request.side()).isEqualTo(Side.BUY);
+        verify(executionService).executeSignal(signal);
     }
 
     @Test
     void shouldThrowWhenRiskFails() {
+        Signal signal = new Signal("BTCUSDT", Side.BUY, BigDecimal.valueOf(2), BigDecimal.valueOf(60000), "TestStrategy", Instant.now());
         when(riskService.checkTrade(any(TradeRequest.class)))
                 .thenReturn(RiskCheckResult.rejected("Risk violation"));
 
-        assertThatThrownBy(() -> signalExecutionService.executeSignal(validSignal))
+        assertThatThrownBy(() -> signalExecutionService.executeSignal(signal))
                 .isInstanceOf(RiskViolationException.class)
                 .hasMessageContaining("Risk violation");
 
-        verify(tradeService, never()).createTrade(any());
+        verify(executionService, never()).executeSignal(any());
     }
 
     @Test
     void shouldExecuteMultipleSignals() {
-        Signal signal2 = new Signal(
-                "ETHUSDT",
-                Side.SELL,
-                BigDecimal.valueOf(5),
-                BigDecimal.valueOf(3000),
-                "TestStrategy",
-                Instant.now()
-        );
+        Signal signal1 = new Signal("BTCUSDT", Side.BUY, BigDecimal.valueOf(2), BigDecimal.valueOf(60000), "TestStrategy", Instant.now());
+        Signal signal2 = new Signal("ETHUSDT", Side.SELL, BigDecimal.valueOf(5), BigDecimal.valueOf(3000), "TestStrategy", Instant.now());
 
         when(riskService.checkTrade(any(TradeRequest.class)))
                 .thenReturn(RiskCheckResult.ok());
 
-        Trade mockTrade1 = new Trade("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000), Side.BUY);
-        ReflectionTestUtils.setField(mockTrade1, "id", 1L);
-        Trade mockTrade2 = new Trade("ETHUSDT", BigDecimal.valueOf(5), BigDecimal.valueOf(3000), Side.SELL);
-        ReflectionTestUtils.setField(mockTrade2, "id", 2L);
-        when(tradeService.createTrade(any(CreateTradeRequest.class)))
-                .thenReturn(mockTrade1)
-                .thenReturn(mockTrade2);
-
-        signalExecutionService.executeSignals(List.of(validSignal, signal2));
+        signalExecutionService.executeSignals(List.of(signal1, signal2));
 
         verify(riskService, times(2)).checkTrade(any(TradeRequest.class));
-        verify(tradeService, times(2)).createTrade(any(CreateTradeRequest.class));
+        verify(executionService, times(2)).executeSignal(any(Signal.class));
     }
 }

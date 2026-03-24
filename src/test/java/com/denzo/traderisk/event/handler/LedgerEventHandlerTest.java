@@ -36,9 +36,7 @@ class LedgerEventHandlerTest {
 
     @Test
     void shouldRecordLedgerOnTradeEvent() {
-        TradeExecutedEvent event = new TradeExecutedEvent(
-                1L, "BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000), Side.BUY
-        );
+        TradeExecutedEvent event = new TradeExecutedEvent("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000), Side.BUY, "1");
         PositionResponse position = new PositionResponse("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000), BigDecimal.ZERO);
         RealisedPnlResponse realised = new RealisedPnlResponse("BTCUSDT", BigDecimal.ZERO);
 

@@ -37,9 +37,7 @@ class ReplayServiceTest {
     @BeforeEach
     void setUp() {
         // Настраиваем, чтобы EventStore возвращал список событий
-        TradeExecutedEvent event = new TradeExecutedEvent(
-                1L, "BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000), Side.BUY
-        );
+        TradeExecutedEvent event = new TradeExecutedEvent("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000), Side.BUY, "1");
         when(eventStore.getAll()).thenReturn(List.of(event));
     }
 

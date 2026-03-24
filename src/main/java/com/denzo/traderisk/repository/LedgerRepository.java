@@ -6,7 +6,11 @@ import java.time.Instant;
 import java.util.List;
 
 public interface LedgerRepository extends JpaRepository<LedgerEntry, Long> {
+
     List<LedgerEntry> findBySymbolOrderByTimestampAsc(String symbol);
+
     List<LedgerEntry> findBySymbolAndTimestampBetweenOrderByTimestampAsc(String symbol, Instant from, Instant to);
-    List<LedgerEntry> findByTradeId(Long tradeId);
+
+    // если нужен поиск по идентификатору ордера на бирже:
+    List<LedgerEntry> findByExchangeOrderId(String exchangeOrderId);
 }

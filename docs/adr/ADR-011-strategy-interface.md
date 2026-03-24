@@ -1,26 +1,28 @@
-# ADR-011 — Financial Math Layer
+# ADR-011 — Strategy Interface
 
-Status: Accepted
-Date: 2026-03-08
+Status: Accepted  
+Date: 2026-03-14
 
 ## Context
 
-Financial calculations were scattered.
+Trading strategies must be pluggable and isolated from execution logic.
 
-Multiple setScale calls caused rounding inconsistencies.
+Hardcoding strategies would tightly couple strategy and engine layers.
 
 ## Decision
 
-Introduce FinancialMath utility.
+Define Strategy interface.
 
-Centralizes:
+Strategies generate signals which are later executed by the engine.
 
-- multiply
-- add
-- subtract
-- scale
-- rounding
+Example strategies:
+
+RandomStrategy  
+Future algorithmic strategies
 
 ## Consequences
 
-Consistent financial calculations across services.
+Positive:
+
+- pluggable strategies
+- separation between signal generation and execution

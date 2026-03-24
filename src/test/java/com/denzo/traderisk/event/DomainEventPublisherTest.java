@@ -27,9 +27,7 @@ class DomainEventPublisherTest {
 
     @Test
     void shouldPublishAndStoreEvent() {
-        TradeExecutedEvent event = new TradeExecutedEvent(
-                1L, "BTCUSDT", BigDecimal.ONE, BigDecimal.valueOf(60000), Side.BUY
-        );
+        TradeExecutedEvent event = new TradeExecutedEvent("BTCUSDT", BigDecimal.ONE, BigDecimal.valueOf(60000), Side.BUY, "1");
         domainEventPublisher.publish(event);
         verify(eventStore).append(event);
         verify(publisher).publishEvent(event);

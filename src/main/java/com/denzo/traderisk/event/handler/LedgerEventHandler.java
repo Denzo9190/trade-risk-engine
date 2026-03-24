@@ -7,7 +7,6 @@ import com.denzo.traderisk.service.PositionService;
 import com.denzo.traderisk.service.RealisedPnlService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -21,11 +20,9 @@ public class LedgerEventHandler {
     private final RealisedPnlService realisedPnlService;
 
     @EventListener
-    @Order(2)
     public void handleTradeExecuted(TradeExecutedEvent event) {
         PositionResponse position = positionService.getPosition(event.symbol());
         BigDecimal realisedPnl = realisedPnlService.calculateRealisedPnl(event.symbol()).realisedPnl();
-        // Здесь нужно адаптировать метод recordTrade под новые данные
         ledgerService.recordTrade(event, position, realisedPnl);
     }
 }

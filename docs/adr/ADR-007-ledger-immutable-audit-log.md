@@ -1,26 +1,34 @@
-# ADR-007 — Google Ads Automation Direction
+# ADR-007 — Immutable Ledger
 
-Status: Accepted
-Date: 2026-03-01
+Status: Accepted  
+Date: 2026-03-09
 
 ## Context
 
-Project includes multiple potential domains:
+Financial systems require full auditability.
 
-- trading infrastructure
-- backend engineering
-- traffic automation
+Mutating accounting records can break traceability.
 
 ## Decision
 
-Integrate Google Ads automation modules
-as a parallel execution domain.
+Ledger entries are immutable.
 
-## Rationale
+Every accounting change creates a new entry.
 
-Unique combination of:
+Ledger acts as audit log for:
 
-- Java engineering
-- real traffic buying experience
+- position updates
+- realised PnL
+- system events
 
-creates strategic differentiation.
+## Consequences
+
+Positive:
+
+- full audit trail
+- regulatory-grade accounting
+- easy forensic analysis
+
+Negative:
+
+- larger storage usage

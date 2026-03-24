@@ -1,25 +1,32 @@
-# ADR-002 — Semantic Versioning Reset
+# ADR-002 — Event Driven Trade Pipeline
 
-Status: Accepted
-Date: 2026-02
+Status: Accepted  
+Date: 2026-03-11
 
 ## Context
 
-Project moved from exploratory phase to structured development.
-
-Previous version numbers did not reflect real lifecycle.
+Direct service coupling created rigid architecture and reduced scalability.
 
 ## Decision
 
-Use semantic versioning:
+Trade execution produces TradeExecutedEvent.
 
-MAJOR.MINOR.PATCH
+Handlers process events independently:
 
-Baseline version reset to:
+- Position Handler
+- PnL Handler
+- Ledger Handler
 
-1.0.0
+Events stored in EventStore.
 
 ## Consequences
 
-Clear release model.
-Version numbers reflect actual system evolution.
+Positive:
+
+- Loose coupling
+- Event replay capability
+- High-load scalability
+
+Negative:
+
+- Slightly more complex architecture

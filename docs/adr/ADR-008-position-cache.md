@@ -1,26 +1,27 @@
-# ADR-008 — Signed Quantity Position Model
+# ADR-008 — Position Cache
 
-Status: Accepted
-Date: 2026-03-05
+Status: Accepted  
+Date: 2026-03-11
 
 ## Context
 
-Previous model used separate long and short quantities.
+Position calculations require frequent reads.
 
-This created inconsistencies with PnL calculations.
+Repeated database queries create latency under load.
 
 ## Decision
 
-Use signed quantity model.
+Introduce in-memory PositionCache.
 
-Positive → long  
-Negative → short
-
-Trade processing uses:
-
-closingQty / openingQty logic.
+Cache updated by event handlers when trades execute.
 
 ## Consequences
 
-Simplified position accounting.
-Unified logic with realised PnL engine.
+Positive:
+
+- faster portfolio calculations
+- reduced database load
+
+Negative:
+
+- need to maintain cache consistency

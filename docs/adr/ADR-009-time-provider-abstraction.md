@@ -1,22 +1,30 @@
-# ADR-009 — Deterministic Trade Processing
+# ADR-009 — Time Provider Abstraction
 
-Status: Accepted
-Date: 2026-03-06
+Status: Accepted  
+Date: 2026-03-18
 
 ## Context
 
-Trade order affects PnL calculation.
+Using Instant.now() directly prevents deterministic backtesting.
 
-Non-deterministic ordering produces inconsistent results.
+Backtests require simulated time.
 
 ## Decision
 
-Trades must always be processed in deterministic order.
+Introduce TimeProvider abstraction.
 
-Repository method:
+Implementations:
 
-findBySymbolOrderByIdAsc
+SystemTimeProvider  
+BacktestTimeProvider
 
 ## Consequences
 
-Backtests and calculations become reproducible.
+Positive:
+
+- deterministic backtests
+- controllable timeline
+
+Negative:
+
+- small architectural overhead

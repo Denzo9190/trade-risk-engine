@@ -1,42 +1,23 @@
 package com.denzo.traderisk.service.execution;
 
-import com.denzo.traderisk.domain.Trade;
-import com.denzo.traderisk.dto.CreateTradeRequest;
 import com.denzo.traderisk.dto.RiskCheckResult;
 import com.denzo.traderisk.dto.TradeRequest;
 import com.denzo.traderisk.exception.RiskViolationException;
+import com.denzo.traderisk.execution.ExecutionService;
 import com.denzo.traderisk.service.RiskService;
-import com.denzo.traderisk.service.TradeService;
 import com.denzo.traderisk.strategy.Signal;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
-/**
- * Сервис исполнения сигналов, генерируемых стратегиями.
- *
- * <p>Преобразует {@link Signal} в запрос на сделку, проверяет риск через {@link RiskService}
- * и при успехе вызывает {@link TradeService}. Стратегии никогда не должны вызывать TradeService напрямую.</p>
- */
 @Service
+@RequiredArgsConstructor
 public class SignalExecutionService {
 
     private final RiskService riskService;
-    private final TradeService tradeService;
+    private final ExecutionService executionService;
 
-    public SignalExecutionService(RiskService riskService, TradeService tradeService) {
-        this.riskService = riskService;
-        this.tradeService = tradeService;
-    }
-
-    /**
-     * Исполняет один сигнал.
-     *
-     * @param signal сигнал, сгенерированный стратегией
-     * @throws RiskViolationException если проверка риска не пройдена
-     */
     public void executeSignal(Signal signal) {
-        // 1. Создаём запрос для риск-движка
+        // 1. Создаём запрос для риска (можно прямо из сигнала)
         TradeRequest riskRequest = new TradeRequest(
                 signal.symbol(),
                 signal.quantity(),
@@ -50,24 +31,11 @@ public class SignalExecutionService {
             throw new RiskViolationException(riskCheck.reason());
         }
 
-        // 3. Создаём запрос на сделку
-        CreateTradeRequest tradeRequest = new CreateTradeRequest(
-                signal.symbol(),
-                signal.quantity(),
-                signal.price(),
-                signal.side()
-        );
-
-        // 4. Исполняем сделку
-        Trade trade = tradeService.createTrade(tradeRequest);
+        // 3. Исполняем через Exchange Adapter
+        executionService.executeSignal(signal);
     }
 
-    /**
-     * Исполняет список сигналов.
-     *
-     * @param signals список сигналов
-     */
-    public void executeSignals(List<Signal> signals) {
+    public void executeSignals(java.util.List<Signal> signals) {
         signals.forEach(this::executeSignal);
     }
 }

@@ -1,24 +1,33 @@
-# ADR-006 — Runtime Discipline Rule
+# ADR-006 — Modular Risk Engine
 
-Status: Accepted
-Date: 2026-02-28
+Status: Accepted  
+Date: 2026-03-13
 
 ## Context
 
-Integration tests failed due to Flyway version mismatch
-between build dependency graph and runtime classpath.
+Risk validation rules evolve constantly.
+
+Hardcoding rules inside RiskService would lead to rigid architecture
+and difficult future expansion.
 
 ## Decision
 
-Critical infrastructure dependencies must be overridden
-via properties.
+Risk engine uses modular rule architecture.
 
-IDE build must delegate to Maven Wrapper.
+Each rule implements:
 
-Runtime verification via:
+RiskRule interface
 
-./mvnw clean verify
+Spring automatically discovers rules and executes them sequentially.
 
 ## Consequences
 
-Eliminates build/runtime dependency mismatch.
+Positive:
+
+- easy addition of new risk checks
+- clear separation of risk policies
+- scalable architecture
+
+Negative:
+
+- additional abstraction layer

@@ -24,10 +24,8 @@ class PositionEventHandlerTest {
 
     @Test
     void shouldUpdatePositionOnTradeEvent() {
-        TradeExecutedEvent event = new TradeExecutedEvent(
-                1L, "BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000), Side.BUY
-        );
+        TradeExecutedEvent event = new TradeExecutedEvent("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000), Side.BUY, "1");
         handler.handleTradeExecuted(event);
-        verify(positionService).updatePosition(event.symbol(), event.quantity(), event.price());
+        verify(positionService).updatePosition(event.symbol(), event.executedQuantity(), event.executedPrice());
     }
 }

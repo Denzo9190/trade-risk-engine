@@ -23,10 +23,10 @@ public class LedgerService {
     public void recordTrade(TradeExecutedEvent event, PositionResponse positionAfter, BigDecimal realisedPnlAfter) {
         LedgerEntry entry = new LedgerEntry(
                 event.symbol(),
-                event.tradeId(),
+                event.exchangeOrderId(),   // теперь String
                 LedgerEventType.TRADE_EXECUTED,
-                event.quantity(),
-                event.price(),
+                event.executedQuantity(),
+                event.executedPrice(),
                 event.side().name(),
                 positionAfter.totalQuantity(),
                 positionAfter.averagePrice(),

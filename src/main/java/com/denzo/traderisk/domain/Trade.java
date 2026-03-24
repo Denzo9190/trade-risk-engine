@@ -33,6 +33,9 @@ public class Trade {
     @Column(nullable = false)
     private Side side;
 
+    @Column(name = "exchange_order_id", length = 64)
+    private String exchangeOrderId;   // ← добавлено
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -42,9 +45,14 @@ public class Trade {
     }
 
     public Trade(String symbol, BigDecimal quantity, BigDecimal price, Side side) {
+        this(symbol, quantity, price, side, null);
+    }
+
+    public Trade(String symbol, BigDecimal quantity, BigDecimal price, Side side, String exchangeOrderId) {
         this.symbol = symbol;
         this.quantity = quantity;
         this.price = price;
         this.side = side;
+        this.exchangeOrderId = exchangeOrderId;
     }
 }

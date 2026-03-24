@@ -1,14 +1,22 @@
-# ADR-003 — Validity Rule
+# ADR-003 — Financial Math Layer
 
-Status: Accepted
+Status: Accepted  
+Date: 2026-03-08
+
+## Context
+
+Financial calculations require strict precision and consistent rounding.
+
+Different rounding strategies across services create accounting drift.
 
 ## Decision
 
-Any architectural or strategic decision that is not documented
-in the ADR system or Decision Log is considered non-existent.
+All financial calculations must pass through FinancialMath layer.
 
-## Rationale
+## Consequences
 
-Memory and chat history are unreliable sources of truth.
+Positive:
 
-Only written decisions are considered valid.
+- Centralized financial logic
+- Consistent rounding
+- Accounting safety

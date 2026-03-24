@@ -1,14 +1,35 @@
-# ADR-005 — Governance Enforcement Rule
+# ADR-005 — Signed Position Model
 
-Status: Accepted
+Status: Accepted  
+Date: 2026-03-04
+
+## Context
+
+Trading systems must support both long and short positions.
+
+Separate logic branches for long and short positions increase complexity
+and introduce edge cases when position direction flips.
 
 ## Decision
 
-Every significant architectural or strategic step must include
-an explicit fixation instruction:
+Positions are represented using a signed quantity model:
 
-- which file must be updated
-- what must be written
-- whether version changes
+positive quantity → long  
+negative quantity → short
 
-Implicit agreements are not considered valid.
+Example:
+
+BUY 2 → position = +2  
+SELL 3 → position = -1
+
+## Consequences
+
+Positive:
+
+- unified logic for long and short
+- correct handling of position flips
+- simpler PnL calculations
+
+Negative:
+
+- requires careful validation when computing closing quantities

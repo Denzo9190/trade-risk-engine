@@ -13,7 +13,6 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -39,13 +38,7 @@ class LedgerServiceTest {
     @Test
     void shouldRecordTrade() {
         // given
-        TradeExecutedEvent event = new TradeExecutedEvent(
-                1L,
-                "BTCUSDT",
-                BigDecimal.valueOf(2),
-                BigDecimal.valueOf(60000),
-                Side.BUY
-        );
+        TradeExecutedEvent event = new TradeExecutedEvent("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000), Side.BUY, "1");
 
         PositionResponse positionAfter = new PositionResponse(
                 "BTCUSDT",
@@ -63,7 +56,7 @@ class LedgerServiceTest {
         LedgerEntry captured = entryCaptor.getValue();
 
         assertThat(captured.getSymbol()).isEqualTo("BTCUSDT");
-        assertThat(captured.getTradeId()).isEqualTo(1L);
+        assertThat(captured.getExchangeOrderId()).isEqualTo("1");
         assertThat(captured.getEventType()).isEqualTo(LedgerEventType.TRADE_EXECUTED);
         assertThat(captured.getTradeQuantity()).isEqualByComparingTo(BigDecimal.valueOf(2));
         assertThat(captured.getTradePrice()).isEqualByComparingTo(BigDecimal.valueOf(60000));
@@ -92,7 +85,7 @@ class LedgerServiceTest {
         LedgerEntry captured = entryCaptor.getValue();
 
         assertThat(captured.getSymbol()).isEqualTo(symbol);
-        assertThat(captured.getTradeId()).isNull();
+        assertThat(captured.getExchangeOrderId()).isNull();
         assertThat(captured.getEventType()).isEqualTo(LedgerEventType.RECONCILIATION_RUN);
         assertThat(captured.getTradeQuantity()).isNull();
         assertThat(captured.getTradePrice()).isNull();

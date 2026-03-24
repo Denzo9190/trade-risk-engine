@@ -26,7 +26,8 @@ public class LedgerEntry {
     @Column(nullable = false)
     private Instant timestamp;
 
-    private Long tradeId; // ссылка на сделку (может быть null)
+    @Column(name = "exchange_order_id", length = 64)
+    private String exchangeOrderId; // ссылка на сделку (может быть null)
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -60,14 +61,14 @@ public class LedgerEntry {
     @Column(length = 255)
     private String description;
 
-    public LedgerEntry(String symbol, Long tradeId, LedgerEventType eventType,
+    public LedgerEntry(String symbol, String exchangeOrderId, LedgerEventType eventType,
                        BigDecimal tradeQuantity, BigDecimal tradePrice, String tradeSide,
                        BigDecimal positionQty, BigDecimal avgPrice,
                        BigDecimal realisedPnl, BigDecimal unrealisedPnl,
                        String description) {
         this.symbol = symbol;
         this.timestamp = Instant.now();
-        this.tradeId = tradeId;
+        this.exchangeOrderId = exchangeOrderId;
         this.eventType = eventType;
         this.tradeQuantity = tradeQuantity;
         this.tradePrice = tradePrice;

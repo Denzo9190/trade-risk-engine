@@ -1,18 +1,32 @@
-# ADR-010 — PnL Reconciliation
+# ADR-010 — Market Data Abstraction
 
-Status: Accepted
-Date: 2026-03-07
+Status: Accepted  
+Date: 2026-03-17
+
+## Context
+
+Market prices can come from different sources:
+
+- live exchange feeds
+- historical datasets
+- simulations
+
+Direct coupling to one provider limits system flexibility.
 
 ## Decision
 
-Introduce reconciliation service verifying:
+Introduce MarketDataService abstraction.
 
-realised + unrealised = total PnL
+Implementations may include:
 
-Tolerance:
+LiveMarketDataService  
+HistoricalMarketDataService  
+BacktestMarketDataService
 
-1e-7
+## Consequences
 
-Add database index:
+Positive:
 
-(symbol, created_at)
+- flexible data sources
+- easier testing
+- consistent pricing interface
