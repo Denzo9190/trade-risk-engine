@@ -3,8 +3,8 @@ package com.denzo.traderisk.service;
 import com.denzo.traderisk.config.RiskLimits;
 import com.denzo.traderisk.domain.Side;
 import com.denzo.traderisk.dto.*;
-import com.denzo.traderisk.market.MarketDataNotFoundException;
-import com.denzo.traderisk.market.MarketDataService;
+import com.denzo.traderisk.marketdata.MarketDataEngine;
+import com.denzo.traderisk.marketdata.historical.HistoricalDataNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,10 +12,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -26,7 +26,7 @@ class RiskServiceTest {
     @Mock
     private PortfolioService portfolioService;
     @Mock
-    private MarketDataService marketDataService;
+    private MarketDataEngine marketDataEngine;
 
     private RiskLimits limits;
     private RiskService riskService;
@@ -39,13 +39,13 @@ class RiskServiceTest {
         limits.setMaxPortfolioExposure(BigDecimal.valueOf(500_000));
         limits.setMaxPriceDeviation(BigDecimal.valueOf(0.01));
 
-        riskService = new RiskService(positionService, portfolioService, marketDataService, limits);
+        riskService = new RiskService(positionService, portfolioService, marketDataEngine, limits);
     }
 
     @Test
     void shouldAcceptWhenPriceDeviationWithinLimit() {
         TradeRequest request = new TradeRequest("BTCUSDT", BigDecimal.valueOf(2), new BigDecimal("60500"), Side.BUY);
-        when(marketDataService.getPrice("BTCUSDT")).thenReturn(new BigDecimal("60000"));
+        when(marketDataEngine.getPrice("BTCUSDT")).thenReturn(new BigDecimal("60000"));
         when(positionService.getPosition("BTCUSDT")).thenReturn(new PositionResponse("BTCUSDT", BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO));
         when(portfolioService.getPortfolio()).thenReturn(new PortfolioResponse(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, List.of()));
 
@@ -56,7 +56,7 @@ class RiskServiceTest {
     @Test
     void shouldRejectWhenPriceDeviationExceedsLimit() {
         TradeRequest request = new TradeRequest("BTCUSDT", BigDecimal.valueOf(2), new BigDecimal("61000"), Side.BUY);
-        when(marketDataService.getPrice("BTCUSDT")).thenReturn(new BigDecimal("60000"));
+        when(marketDataEngine.getPrice("BTCUSDT")).thenReturn(new BigDecimal("60000"));
         // моки не нужны, т.к. проверка цены идёт первой
 
         RiskCheckResult result = riskService.checkTrade(request);
@@ -70,7 +70,7 @@ class RiskServiceTest {
     @Test
     void shouldRejectWhenMarketPriceUnavailable() {
         TradeRequest request = new TradeRequest("BTCUSDT", BigDecimal.valueOf(2), new BigDecimal("60000"), Side.BUY);
-        when(marketDataService.getPrice("BTCUSDT")).thenThrow(new MarketDataNotFoundException("BTCUSDT"));
+        when(marketDataEngine.getPrice("BTCUSDT")).thenThrow(new HistoricalDataNotFoundException("BTCUSDT", Instant.now()));
 
         RiskCheckResult result = riskService.checkTrade(request);
         assertThat(result.allowed()).isFalse();
@@ -80,7 +80,7 @@ class RiskServiceTest {
     @Test
     void shouldRejectWhenTradeSizeExceedsLimit() {
         TradeRequest request = new TradeRequest("BTCUSDT", BigDecimal.valueOf(6), BigDecimal.valueOf(60000), Side.BUY);
-        when(marketDataService.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(60000));
+        when(marketDataEngine.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(60000));
 
         RiskCheckResult result = riskService.checkTrade(request);
         assertThat(result.allowed()).isFalse();
@@ -90,7 +90,7 @@ class RiskServiceTest {
     @Test
     void shouldAllowTradeWithinSizeLimit() {
         TradeRequest request = new TradeRequest("BTCUSDT", BigDecimal.valueOf(4), BigDecimal.valueOf(60000), Side.BUY);
-        when(marketDataService.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(60000));
+        when(marketDataEngine.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(60000));
         when(positionService.getPosition("BTCUSDT")).thenReturn(new PositionResponse("BTCUSDT", BigDecimal.ONE, BigDecimal.valueOf(60000), BigDecimal.ZERO));
         when(portfolioService.getPortfolio()).thenReturn(new PortfolioResponse(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.valueOf(100_000), List.of()));
 
@@ -101,7 +101,7 @@ class RiskServiceTest {
     @Test
     void shouldRejectWhenPositionLimitExceeded() {
         TradeRequest request = new TradeRequest("BTCUSDT", BigDecimal.valueOf(5), BigDecimal.valueOf(60000), Side.BUY);
-        when(marketDataService.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(60000));
+        when(marketDataEngine.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(60000));
         when(positionService.getPosition("BTCUSDT")).thenReturn(new PositionResponse("BTCUSDT", BigDecimal.valueOf(7), BigDecimal.valueOf(60000), BigDecimal.ZERO));
 
         RiskCheckResult result = riskService.checkTrade(request);
@@ -112,7 +112,7 @@ class RiskServiceTest {
     @Test
     void shouldRejectWhenPortfolioExposureExceeded() {
         TradeRequest request = new TradeRequest("BTCUSDT", BigDecimal.valueOf(3), BigDecimal.valueOf(60000), Side.BUY);
-        when(marketDataService.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(60000));
+        when(marketDataEngine.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(60000));
         when(positionService.getPosition("BTCUSDT")).thenReturn(new PositionResponse("BTCUSDT", BigDecimal.ONE, BigDecimal.valueOf(60000), BigDecimal.ZERO));
         when(portfolioService.getPortfolio()).thenReturn(new PortfolioResponse(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.valueOf(400_000), List.of()));
 
@@ -124,7 +124,7 @@ class RiskServiceTest {
     @Test
     void shouldAllowTradeWhenAllChecksPass() {
         TradeRequest request = new TradeRequest("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000), Side.BUY);
-        when(marketDataService.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(60000));
+        when(marketDataEngine.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(60000));
         when(positionService.getPosition("BTCUSDT")).thenReturn(new PositionResponse("BTCUSDT", BigDecimal.ONE, BigDecimal.valueOf(60000), BigDecimal.ZERO));
         when(portfolioService.getPortfolio()).thenReturn(new PortfolioResponse(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.valueOf(100_000), List.of()));
 

@@ -2,8 +2,8 @@ package com.denzo.traderisk.backtest;
 
 import com.denzo.traderisk.domain.Side;
 import com.denzo.traderisk.dto.PositionResponse;
-import com.denzo.traderisk.market.MarketDataService;
-import com.denzo.traderisk.market.historical.InMemoryHistoricalMarketDataService;
+import com.denzo.traderisk.marketdata.historical.InMemoryHistoricalMarketDataService;
+import com.denzo.traderisk.marketdata.MarketDataEngine;
 import com.denzo.traderisk.service.PositionService;
 import com.denzo.traderisk.service.RealisedPnlService;
 import com.denzo.traderisk.service.TradeService;
@@ -50,7 +50,7 @@ public class BacktestContextIntegrationTest {
     private BacktestTimeProvider timeProvider;
 
     @Autowired
-    private MarketDataService marketDataService;
+    private MarketDataEngine marketDataEngine;
 
     @Test
     @Sql(scripts = "/clean.sql", executionPhase = ExecutionPhase.BEFORE_TEST_METHOD)

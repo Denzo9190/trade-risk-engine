@@ -5,7 +5,7 @@ import com.denzo.traderisk.config.FinancialConstants;
 import com.denzo.traderisk.domain.Side;
 import com.denzo.traderisk.domain.Trade;
 import com.denzo.traderisk.dto.PositionResponse;
-import com.denzo.traderisk.market.MarketDataService;
+import com.denzo.traderisk.marketdata.MarketDataEngine;
 import com.denzo.traderisk.math.FinancialMath;
 import com.denzo.traderisk.repository.TradeRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +20,7 @@ import java.util.List;
 public class PositionService {
 
     private final TradeRepository tradeRepository;
-    private final MarketDataService marketDataService;
+    private final MarketDataEngine marketDataEngine;
     private final PositionCache positionCache;
 
     public PositionResponse getPosition(String symbol) {
@@ -63,7 +63,7 @@ public class PositionService {
             signedQty = newSignedQty;
         }
 
-        BigDecimal currentPrice = marketDataService.getPrice(symbol);
+        BigDecimal currentPrice = marketDataEngine.getPrice(symbol);
         BigDecimal unrealisedPnl;
         if (signedQty.signum() > 0) {
             unrealisedPnl = FinancialMath.multiply(currentPrice.subtract(avgPrice), signedQty);

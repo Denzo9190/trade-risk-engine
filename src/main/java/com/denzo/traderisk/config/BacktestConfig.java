@@ -1,8 +1,7 @@
 package com.denzo.traderisk.config;
 
-import com.denzo.traderisk.market.BacktestMarketDataService;
-import com.denzo.traderisk.market.MarketDataService;
-import com.denzo.traderisk.market.historical.HistoricalMarketDataService;
+import com.denzo.traderisk.marketdata.historical.HistoricalMarketDataAdapter;
+import com.denzo.traderisk.marketdata.historical.HistoricalMarketDataService;
 import com.denzo.traderisk.time.BacktestTimeProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,8 +20,8 @@ public class BacktestConfig {
 
     @Bean
     @Primary
-    public MarketDataService backtestMarketDataService(HistoricalMarketDataService historical,
-                                                       BacktestTimeProvider timeProvider) {
-        return new BacktestMarketDataService(historical, timeProvider);
+    public HistoricalMarketDataAdapter historicalMarketDataAdapter(HistoricalMarketDataService historical,
+                                                                   BacktestTimeProvider timeProvider) {
+        return new HistoricalMarketDataAdapter(historical, timeProvider);
     }
 }

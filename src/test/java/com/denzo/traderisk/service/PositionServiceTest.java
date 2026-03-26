@@ -4,7 +4,7 @@ import com.denzo.traderisk.cache.PositionCache;
 import com.denzo.traderisk.domain.Side;
 import com.denzo.traderisk.domain.Trade;
 import com.denzo.traderisk.dto.PositionResponse;
-import com.denzo.traderisk.market.MarketDataService;
+import com.denzo.traderisk.marketdata.MarketDataEngine;
 import com.denzo.traderisk.repository.TradeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,7 +30,7 @@ class PositionServiceTest {
     private TradeRepository tradeRepository;
 
     @Mock
-    private MarketDataService marketDataService;
+    private MarketDataEngine marketDataEngine;
 
     @Mock
     private PositionCache positionCache;
@@ -52,7 +52,7 @@ class PositionServiceTest {
     @Test
     void shouldReturnEmptyPositionWhenNoTrades() {
         when(tradeRepository.findBySymbolOrderByIdAsc("BTCUSDT")).thenReturn(List.of());
-        when(marketDataService.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(63000));
+        when(marketDataEngine.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(63000));
 
         PositionResponse response = positionService.getPosition("BTCUSDT");
 
@@ -68,7 +68,7 @@ class PositionServiceTest {
                 new Trade("BTCUSDT", BigDecimal.ONE, BigDecimal.valueOf(61000), Side.BUY)
         );
         when(tradeRepository.findBySymbolOrderByIdAsc("BTCUSDT")).thenReturn(trades);
-        when(marketDataService.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(63000));
+        when(marketDataEngine.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(63000));
 
         PositionResponse response = positionService.getPosition("BTCUSDT");
 
@@ -84,7 +84,7 @@ class PositionServiceTest {
                 new Trade("BTCUSDT", BigDecimal.ONE, BigDecimal.valueOf(59000), Side.SELL)
         );
         when(tradeRepository.findBySymbolOrderByIdAsc("BTCUSDT")).thenReturn(trades);
-        when(marketDataService.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(58000));
+        when(marketDataEngine.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(58000));
 
         PositionResponse response = positionService.getPosition("BTCUSDT");
 
@@ -101,7 +101,7 @@ class PositionServiceTest {
                 new Trade("BTCUSDT", BigDecimal.valueOf(1.5), BigDecimal.valueOf(63000), Side.SELL)
         );
         when(tradeRepository.findBySymbolOrderByIdAsc("BTCUSDT")).thenReturn(trades);
-        when(marketDataService.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(63000));
+        when(marketDataEngine.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(63000));
 
         PositionResponse response = positionService.getPosition("BTCUSDT");
 
@@ -118,7 +118,7 @@ class PositionServiceTest {
                 new Trade("BTCUSDT", BigDecimal.valueOf(1), BigDecimal.valueOf(58000), Side.BUY)
         );
         when(tradeRepository.findBySymbolOrderByIdAsc("BTCUSDT")).thenReturn(trades);
-        when(marketDataService.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(57000));
+        when(marketDataEngine.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(57000));
 
         PositionResponse response = positionService.getPosition("BTCUSDT");
 
@@ -134,7 +134,7 @@ class PositionServiceTest {
                 new Trade("BTCUSDT", BigDecimal.valueOf(3), BigDecimal.valueOf(62000), Side.SELL)
         );
         when(tradeRepository.findBySymbolOrderByIdAsc("BTCUSDT")).thenReturn(trades);
-        when(marketDataService.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(63000));
+        when(marketDataEngine.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(63000));
 
         PositionResponse response = positionService.getPosition("BTCUSDT");
 
@@ -150,7 +150,7 @@ class PositionServiceTest {
                 new Trade("BTCUSDT", BigDecimal.valueOf(3), BigDecimal.valueOf(58000), Side.BUY)
         );
         when(tradeRepository.findBySymbolOrderByIdAsc("BTCUSDT")).thenReturn(trades);
-        when(marketDataService.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(59000));
+        when(marketDataEngine.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(59000));
 
         PositionResponse response = positionService.getPosition("BTCUSDT");
 
@@ -173,7 +173,7 @@ class PositionServiceTest {
                 new Trade("BTCUSDT", BigDecimal.valueOf(0.5), BigDecimal.valueOf(62000), Side.SELL)
         );
 
-        when(marketDataService.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(63000));
+        when(marketDataEngine.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(63000));
         when(tradeRepository.findBySymbolOrderByIdAsc("BTCUSDT")).thenReturn(order1);
         PositionResponse result1 = positionService.getPosition("BTCUSDT");
 

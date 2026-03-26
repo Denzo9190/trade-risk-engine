@@ -1,7 +1,7 @@
 package com.denzo.traderisk.strategy;
 
 import com.denzo.traderisk.domain.Side;
-import com.denzo.traderisk.market.MarketDataService;
+import com.denzo.traderisk.marketdata.MarketDataEngine;
 import com.denzo.traderisk.time.TimeProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -15,19 +15,19 @@ import java.util.Random;
 public class RandomStrategy implements TradingStrategy {
 
     private final Random random;
-    private final MarketDataService marketDataService;
+    private final MarketDataEngine marketDataEngine;  // вместо MarketDataService
     private final TimeProvider timeProvider;
 
     @Autowired
-    public RandomStrategy(MarketDataService marketDataService, TimeProvider timeProvider) {
-        this.marketDataService = marketDataService;
+    public RandomStrategy(MarketDataEngine marketDataEngine, TimeProvider timeProvider) {
+        this.marketDataEngine = marketDataEngine;
         this.timeProvider = timeProvider;
         this.random = new Random();
     }
 
-    // конструктор для тестов (публичный для доступа из пакета backtest)
-    public RandomStrategy(MarketDataService marketDataService, TimeProvider timeProvider, long seed) {
-        this.marketDataService = marketDataService;
+    // конструктор для тестов
+    RandomStrategy(MarketDataEngine marketDataEngine, TimeProvider timeProvider, long seed) {
+        this.marketDataEngine = marketDataEngine;
         this.timeProvider = timeProvider;
         this.random = new Random(seed);
     }
@@ -35,7 +35,7 @@ public class RandomStrategy implements TradingStrategy {
     @Override
     public Optional<Signal> generateSignal(String symbol) {
         if (random.nextBoolean()) {
-            BigDecimal price = marketDataService.getPrice(symbol);
+            BigDecimal price = marketDataEngine.getPrice(symbol);
             return Optional.of(new Signal(
                     symbol,
                     Side.BUY,

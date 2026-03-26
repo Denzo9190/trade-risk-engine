@@ -2,8 +2,7 @@ package com.denzo.traderisk.service;
 
 import com.denzo.traderisk.config.RiskLimits;
 import com.denzo.traderisk.dto.*;
-import com.denzo.traderisk.market.MarketDataNotFoundException;
-import com.denzo.traderisk.market.MarketDataService;
+import com.denzo.traderisk.marketdata.MarketDataEngine;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,16 +21,16 @@ public class RiskService {
 
     private final PositionService positionService;
     private final PortfolioService portfolioService;
-    private final MarketDataService marketDataService;
+    private final MarketDataEngine marketDataEngine;
     private final RiskLimits limits;
 
     public RiskCheckResult checkTrade(TradeRequest request) {
-        // 1. Проверка цены (самая дешёвая)
+        // 1. Проверка цены
         BigDecimal marketPrice;
         try {
-            marketPrice = marketDataService.getPrice(request.symbol());
-        } catch (MarketDataNotFoundException e) {
-            log.warn("Market data not found for {}: {}", request.symbol(), e.getMessage());
+            marketPrice = marketDataEngine.getPrice(request.symbol());
+        } catch (Exception e) {
+            log.warn("Failed to get market price for {}: {}", request.symbol(), e.getMessage());
             return RiskCheckResult.rejected("Market price unavailable for " + request.symbol());
         }
         if (marketPrice == null || marketPrice.compareTo(BigDecimal.ZERO) == 0) {

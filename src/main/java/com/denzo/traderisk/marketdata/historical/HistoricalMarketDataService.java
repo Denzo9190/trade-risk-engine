@@ -1,4 +1,4 @@
-package com.denzo.traderisk.market.historical;
+package com.denzo.traderisk.marketdata.historical;
 
 import java.math.BigDecimal;
 import java.time.Instant;

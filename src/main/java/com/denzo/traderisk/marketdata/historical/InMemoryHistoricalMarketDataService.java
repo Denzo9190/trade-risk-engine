@@ -1,6 +1,5 @@
-package com.denzo.traderisk.market.historical;
+package com.denzo.traderisk.marketdata.historical;
 
-import com.denzo.traderisk.market.MarketDataNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -10,10 +9,6 @@ import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * In-memory хранилище исторических цен.
- * Позволяет добавлять цены через addPrice (для тестов).
- */
 @Service
 public class InMemoryHistoricalMarketDataService implements HistoricalMarketDataService {
 
@@ -27,11 +22,11 @@ public class InMemoryHistoricalMarketDataService implements HistoricalMarketData
     public BigDecimal getPrice(String symbol, Instant timestamp) {
         NavigableMap<Instant, BigDecimal> series = data.get(symbol);
         if (series == null) {
-            throw new MarketDataNotFoundException(symbol);
+            throw new HistoricalDataNotFoundException(symbol, timestamp);
         }
         Map.Entry<Instant, BigDecimal> entry = series.floorEntry(timestamp);
         if (entry == null) {
-            throw new MarketDataNotFoundException(symbol + " at " + timestamp);
+            throw new HistoricalDataNotFoundException(symbol, timestamp);
         }
         return entry.getValue();
     }

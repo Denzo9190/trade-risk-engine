@@ -1,7 +1,7 @@
 package com.denzo.traderisk.strategy;
 
 import com.denzo.traderisk.domain.Side;
-import com.denzo.traderisk.market.MarketDataService;
+import com.denzo.traderisk.marketdata.MarketDataEngine;
 import com.denzo.traderisk.time.TimeProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,15 +20,15 @@ import static org.mockito.Mockito.when;
 class RandomStrategyTest {
 
     @Mock
-    private MarketDataService marketDataService;
+    private MarketDataEngine marketDataEngine;
 
     @Mock
     private TimeProvider timeProvider;
 
     @Test
     void shouldGenerateSignalWithPriceFromMarketData() {
-        RandomStrategy strategy = new RandomStrategy(marketDataService, timeProvider, 42L);
-        when(marketDataService.getPrice(anyString())).thenReturn(new BigDecimal("63500"));
+        RandomStrategy strategy = new RandomStrategy(marketDataEngine, timeProvider, 42L);
+        when(marketDataEngine.getPrice(anyString())).thenReturn(new BigDecimal("63500"));
 
         Instant fixedTime = Instant.parse("2026-03-18T10:00:00Z");
         when(timeProvider.now()).thenReturn(fixedTime);
