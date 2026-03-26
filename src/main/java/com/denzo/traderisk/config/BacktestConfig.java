@@ -1,5 +1,6 @@
 package com.denzo.traderisk.config;
 
+import com.denzo.traderisk.marketdata.MarketDataAdapter;
 import com.denzo.traderisk.marketdata.historical.HistoricalMarketDataAdapter;
 import com.denzo.traderisk.marketdata.historical.HistoricalMarketDataService;
 import com.denzo.traderisk.time.BacktestTimeProvider;
@@ -14,14 +15,14 @@ public class BacktestConfig {
 
     @Bean
     @Primary
-    public BacktestTimeProvider backtestTimeProvider() {
-        return new BacktestTimeProvider();
+    public MarketDataAdapter backtestMarketDataAdapter(HistoricalMarketDataService historical,
+                                                       BacktestTimeProvider timeProvider) {
+        return new HistoricalMarketDataAdapter(historical, timeProvider);
     }
 
     @Bean
     @Primary
-    public HistoricalMarketDataAdapter historicalMarketDataAdapter(HistoricalMarketDataService historical,
-                                                                   BacktestTimeProvider timeProvider) {
-        return new HistoricalMarketDataAdapter(historical, timeProvider);
+    public BacktestTimeProvider backtestTimeProvider() {
+        return new BacktestTimeProvider();
     }
 }

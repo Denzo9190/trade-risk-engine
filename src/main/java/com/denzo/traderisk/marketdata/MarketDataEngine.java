@@ -14,8 +14,21 @@ import java.math.BigDecimal;
 public class MarketDataEngine {
 
     private final MarketDataAdapter adapter;
+    private final PriceCache cache;
 
     public BigDecimal getPrice(String symbol) {
-        return adapter.getPrice(symbol);
+        BigDecimal cached = cache.get(symbol);
+        if (cached != null) {
+            return cached;
+        }
+        BigDecimal price = adapter.getPrice(symbol);
+        cache.put(symbol, price);
+        return price;
+    }
+
+    // Опционально: метод для принудительного обновления кэша
+    public void refreshPrice(String symbol) {
+        BigDecimal price = adapter.getPrice(symbol);
+        cache.put(symbol, price);
     }
 }
