@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
-@Profile("!backtest")   // не создавать в backtest-профиле
 public class InMemoryPriceCache implements PriceCache {
 
     private static class CachedPrice {

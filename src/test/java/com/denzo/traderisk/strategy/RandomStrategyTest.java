@@ -27,7 +27,7 @@ class RandomStrategyTest {
 
     @Test
     void shouldGenerateSignalWithPriceFromMarketData() {
-        RandomStrategy strategy = new RandomStrategy(marketDataEngine, timeProvider, 42L);
+        RandomStrategy strategy = new RandomStrategy(marketDataEngine, timeProvider);
         when(marketDataEngine.getPrice(anyString())).thenReturn(new BigDecimal("63500"));
 
         Instant fixedTime = Instant.parse("2026-03-18T10:00:00Z");

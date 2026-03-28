@@ -6,29 +6,21 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 
 /**
- * Центральный сервис для доступа к рыночным данным.
- * Все компоненты системы (стратегии, риск, портфель) используют его для получения цен.
+ * Единая точка доступа к рыночным ценам.
+ * Всегда читает цену из кэша. Если цена отсутствует, бросает исключение.
+ * Кэш должен обновляться через MarketDataFeedEngine.
  */
 @Service
 @RequiredArgsConstructor
 public class MarketDataEngine {
 
-    private final MarketDataAdapter adapter;
     private final PriceCache cache;
 
     public BigDecimal getPrice(String symbol) {
-        BigDecimal cached = cache.get(symbol);
-        if (cached != null) {
-            return cached;
+        BigDecimal price = cache.get(symbol);
+        if (price == null) {
+            throw new IllegalStateException("Price not available for symbol: " + symbol);
         }
-        BigDecimal price = adapter.getPrice(symbol);
-        cache.put(symbol, price);
         return price;
-    }
-
-    // Опционально: метод для принудительного обновления кэша
-    public void refreshPrice(String symbol) {
-        BigDecimal price = adapter.getPrice(symbol);
-        cache.put(symbol, price);
     }
 }

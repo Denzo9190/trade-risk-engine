@@ -2,8 +2,12 @@ package com.denzo.traderisk.backtest;
 
 import com.denzo.traderisk.domain.Side;
 import com.denzo.traderisk.dto.PositionResponse;
-import com.denzo.traderisk.marketdata.historical.InMemoryHistoricalMarketDataService;
+import com.denzo.traderisk.marketdata.InMemoryPriceCache;
 import com.denzo.traderisk.marketdata.MarketDataEngine;
+import com.denzo.traderisk.marketdata.PriceCache;
+import com.denzo.traderisk.marketdata.adapter.MarketDataAdapter;
+import com.denzo.traderisk.marketdata.historical.HistoricalMarketDataAdapter;
+import com.denzo.traderisk.marketdata.historical.InMemoryHistoricalMarketDataService;
 import com.denzo.traderisk.service.PositionService;
 import com.denzo.traderisk.service.RealisedPnlService;
 import com.denzo.traderisk.service.TradeService;
@@ -50,7 +54,10 @@ public class BacktestContextIntegrationTest {
     private BacktestTimeProvider timeProvider;
 
     @Autowired
-    private MarketDataEngine marketDataEngine;
+    private MarketDataAdapter historicalAdapter;   // HistoricalMarketDataAdapter
+
+    @Autowired
+    private PriceCache priceCache;                 // InMemoryPriceCache
 
     @Test
     @Sql(scripts = "/clean.sql", executionPhase = ExecutionPhase.BEFORE_TEST_METHOD)
@@ -80,6 +87,8 @@ public class BacktestContextIntegrationTest {
                 .withTradeService(tradeService)
                 .withPositionService(positionService)
                 .withRealisedPnlService(realisedPnlService)
+                .withHistoricalAdapter(historicalAdapter)
+                .withPriceCache(priceCache)
                 .build();
 
         context.run("BTCUSDT", List.of(t1, t2));

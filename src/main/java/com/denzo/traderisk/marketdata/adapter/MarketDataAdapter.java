@@ -1,4 +1,4 @@
-package com.denzo.traderisk.marketdata;
+package com.denzo.traderisk.marketdata.adapter;
 
 import java.math.BigDecimal;
 

@@ -1,14 +1,18 @@
 package com.denzo.traderisk.marketdata.historical;
 
-import com.denzo.traderisk.marketdata.MarketDataAdapter;
+import com.denzo.traderisk.marketdata.adapter.MarketDataAdapter;
 import com.denzo.traderisk.time.TimeProvider;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 
+@Component
+@Profile("backtest")
 @RequiredArgsConstructor
 public class HistoricalMarketDataAdapter implements MarketDataAdapter {
 

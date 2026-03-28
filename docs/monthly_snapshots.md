@@ -384,3 +384,91 @@ Rejection reason includes:
 
 - actual price
 - deviation percentage
+
+## March 23
+
+Exchange Adapter Layer implemented.
+
+System can now connect to real exchanges through pluggable adapters.
+All existing tests remain green.
+
+---
+
+## March 24
+
+Market Data Adapter Architecture implemented.
+
+MarketDataEngine introduced as central price access point.
+Trading logic now fully decoupled from price sources.
+Mock adapter used for deterministic testing.
+
+---
+
+## March 25
+
+Infrastructure milestone.
+
+Oracle Cloud VM instance deployed for 24/7 runtime services.
+Public IP configured and SSH access established.
+
+---
+
+## March 26
+
+Market Data Cache introduced (ADR-015).
+
+PriceCache reduces adapter calls and lowers latency.
+
+Architecture:
+
+MarketDataEngine  
+↓  
+PriceCache  
+↓  
+MarketDataAdapter
+
+---
+
+## March 27
+
+Market Data Feed Engine implemented (ADR-016).
+
+Market data flow reorganized:
+
+Feed → Adapter → Cache → Engine
+
+Profiles introduced for:
+- main runtime
+- backtest runtime
+
+MarketDataEngine now reads exclusively from cache.
+
+---
+
+# Current Architecture State (end of March 2026)
+
+Core pipeline:
+
+Strategy  
+↓  
+Signal  
+↓  
+Risk Engine  
+↓  
+Execution  
+↓  
+Position Engine  
+↓  
+Portfolio Engine  
+↓  
+PnL Engine
+
+Market data flow:
+
+MarketDataFeedEngine  
+↓  
+MarketDataAdapter  
+↓  
+PriceCache  
+↓  
+MarketDataEngine

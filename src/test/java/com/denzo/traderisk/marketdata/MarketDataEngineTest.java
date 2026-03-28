@@ -9,13 +9,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class MarketDataEngineTest {
-
-    @Mock
-    private MarketDataAdapter adapter;
 
     @Mock
     private PriceCache cache;
@@ -24,24 +22,20 @@ class MarketDataEngineTest {
     private MarketDataEngine engine;
 
     @Test
-    void shouldReturnCachedPriceWhenPresent() {
+    void shouldReturnPriceFromCache() {
         when(cache.get("BTCUSDT")).thenReturn(new BigDecimal("63500"));
 
         BigDecimal price = engine.getPrice("BTCUSDT");
 
         assertThat(price).isEqualByComparingTo("63500");
-        verify(adapter, never()).getPrice(anyString());
     }
 
     @Test
-    void shouldFetchFromAdapterAndCacheOnMiss() {
+    void shouldThrowWhenPriceNotAvailable() {
         when(cache.get("BTCUSDT")).thenReturn(null);
-        when(adapter.getPrice("BTCUSDT")).thenReturn(new BigDecimal("63500"));
 
-        BigDecimal price = engine.getPrice("BTCUSDT");
-
-        assertThat(price).isEqualByComparingTo("63500");
-        verify(adapter).getPrice("BTCUSDT");
-        verify(cache).put("BTCUSDT", new BigDecimal("63500"));
+        assertThatThrownBy(() -> engine.getPrice("BTCUSDT"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Price not available");
     }
 }

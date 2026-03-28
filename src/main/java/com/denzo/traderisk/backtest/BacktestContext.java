@@ -1,11 +1,13 @@
 package com.denzo.traderisk.backtest;
 
+import com.denzo.traderisk.marketdata.PriceCache;
+import com.denzo.traderisk.marketdata.adapter.MarketDataAdapter;
 import com.denzo.traderisk.service.PositionService;
+import com.denzo.traderisk.service.RealisedPnlService;
 import com.denzo.traderisk.service.TradeService;
 import com.denzo.traderisk.service.execution.SignalExecutionService;
 import com.denzo.traderisk.strategy.TradingStrategy;
 import com.denzo.traderisk.time.BacktestTimeProvider;
-import com.denzo.traderisk.service.RealisedPnlService; // добавлено
 
 import java.time.Instant;
 import java.util.List;
@@ -17,7 +19,9 @@ public class BacktestContext {
     private final SignalExecutionService executionService;
     private final TradeService tradeService;
     private final PositionService positionService;
-    private final RealisedPnlService realisedPnlService; // добавлено
+    private final RealisedPnlService realisedPnlService;
+    private final MarketDataAdapter historicalAdapter;
+    private final PriceCache priceCache;
 
     private BacktestContext(Builder builder) {
         this.strategy = builder.strategy;
@@ -26,12 +30,15 @@ public class BacktestContext {
         this.tradeService = builder.tradeService;
         this.positionService = builder.positionService;
         this.realisedPnlService = builder.realisedPnlService;
+        this.historicalAdapter = builder.historicalAdapter;
+        this.priceCache = builder.priceCache;
     }
 
     public BacktestResult run(String symbol, List<Instant> timeline) {
         BacktestEngine engine = new BacktestEngine(
                 strategy, executionService, timeProvider,
-                tradeService, positionService, realisedPnlService
+                tradeService, positionService, realisedPnlService,
+                historicalAdapter, priceCache
         );
         return engine.run(symbol, timeline);
     }
@@ -47,6 +54,8 @@ public class BacktestContext {
         private TradeService tradeService;
         private PositionService positionService;
         private RealisedPnlService realisedPnlService;
+        private MarketDataAdapter historicalAdapter;
+        private PriceCache priceCache;
 
         public Builder withStrategy(TradingStrategy strategy) {
             this.strategy = strategy;
@@ -72,6 +81,14 @@ public class BacktestContext {
             this.realisedPnlService = realisedPnlService;
             return this;
         }
+        public Builder withHistoricalAdapter(MarketDataAdapter historicalAdapter) {
+            this.historicalAdapter = historicalAdapter;
+            return this;
+        }
+        public Builder withPriceCache(PriceCache priceCache) {
+            this.priceCache = priceCache;
+            return this;
+        }
 
         public BacktestContext build() {
             if (strategy == null) throw new IllegalStateException("Strategy must be set");
@@ -80,6 +97,8 @@ public class BacktestContext {
             if (tradeService == null) throw new IllegalStateException("TradeService must be set");
             if (positionService == null) throw new IllegalStateException("PositionService must be set");
             if (realisedPnlService == null) throw new IllegalStateException("RealisedPnlService must be set");
+            if (historicalAdapter == null) throw new IllegalStateException("HistoricalAdapter must be set");
+            if (priceCache == null) throw new IllegalStateException("PriceCache must be set");
             return new BacktestContext(this);
         }
     }
