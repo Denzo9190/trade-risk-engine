@@ -2,6 +2,7 @@ package com.denzo.traderisk.marketdata.feed;
 
 import com.denzo.traderisk.marketdata.PriceCache;
 import com.denzo.traderisk.marketdata.adapter.MarketDataAdapter;
+import com.denzo.traderisk.marketdata.events.MarketDataEventPublisher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -23,6 +24,9 @@ class DefaultMarketDataFeedEngineTest {
 
     @Mock
     private PriceCache priceCache;
+
+    @Mock
+    private MarketDataEventPublisher eventPublisher;   // добавляем мок
 
     @InjectMocks
     private DefaultMarketDataFeedEngine engine;
@@ -55,6 +59,19 @@ class DefaultMarketDataFeedEngineTest {
 
         await().atMost(3, SECONDS)
                 .untilAsserted(() -> verify(priceCache, atLeastOnce()).put("BTCUSDT", new BigDecimal("63500")));
+
+        engine.stop();
+    }
+
+    @Test
+    void shouldPublishEventAfterPriceUpdate() {
+        when(adapter.getPrice(anyString())).thenReturn(new BigDecimal("63500"));
+
+        engine.start();
+
+        await().atMost(2, SECONDS)
+                .untilAsserted(() -> verify(eventPublisher, atLeastOnce())
+                        .publishPriceUpdate("BTCUSDT", new BigDecimal("63500")));
 
         engine.stop();
     }

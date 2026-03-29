@@ -472,3 +472,14 @@ MarketDataAdapter
 PriceCache  
 ↓  
 MarketDataEngine
+
+## March 28
+
+Event-driven market data implemented (ADR-017).
+
+Market data flow now:
+
+Feed → Adapter → Cache → EventBus → Strategy / Risk / Execution
+
+PriceUpdateEvent published on every price update.
+Components react to price changes without polling.

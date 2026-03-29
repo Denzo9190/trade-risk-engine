@@ -2,6 +2,7 @@ package com.denzo.traderisk.marketdata.feed;
 
 import com.denzo.traderisk.marketdata.PriceCache;
 import com.denzo.traderisk.marketdata.adapter.MarketDataAdapter;
+import com.denzo.traderisk.marketdata.events.MarketDataEventPublisher;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
@@ -22,9 +23,9 @@ public class DefaultMarketDataFeedEngine implements MarketDataFeedEngine {
 
     private final MarketDataAdapter adapter;
     private final PriceCache priceCache;
+    private final MarketDataEventPublisher eventPublisher;   // final
 
-    private final ScheduledExecutorService executor =
-            Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
     @PostConstruct
     @Override
@@ -34,7 +35,8 @@ public class DefaultMarketDataFeedEngine implements MarketDataFeedEngine {
             try {
                 BigDecimal price = adapter.getPrice("BTCUSDT");
                 priceCache.put("BTCUSDT", price);
-                log.debug("Updated price cache: BTCUSDT = {}", price);
+                eventPublisher.publishPriceUpdate("BTCUSDT", price);
+                log.debug("Updated price cache and published event: BTCUSDT = {}", price);
             } catch (Exception e) {
                 log.warn("Failed to fetch price from adapter", e);
             }
