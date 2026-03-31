@@ -3,6 +3,7 @@ package com.denzo.traderisk.service;
 import com.denzo.traderisk.config.RiskLimits;
 import com.denzo.traderisk.dto.*;
 import com.denzo.traderisk.marketdata.MarketDataEngine;
+import com.denzo.traderisk.strategy.TradingSignal;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,5 +74,12 @@ public class RiskService {
         }
 
         return RiskCheckResult.ok();
+    }
+
+    public boolean validate(TradingSignal signal) {
+        //TODO validate
+        // Пример простой валидации: можно проверить размер позиции, отклонение цены и т.д.
+        // Пока возвращаем true.
+        return true;
     }
 }

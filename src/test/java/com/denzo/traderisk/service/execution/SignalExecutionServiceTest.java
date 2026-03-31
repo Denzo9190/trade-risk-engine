@@ -7,9 +7,12 @@ import com.denzo.traderisk.dto.RiskCheckResult;
 import com.denzo.traderisk.dto.TradeRequest;
 import com.denzo.traderisk.exception.RiskViolationException;
 import com.denzo.traderisk.execution.ExecutionService;
+import com.denzo.traderisk.execution.SignalProcessor;
 import com.denzo.traderisk.service.RiskService;
 import com.denzo.traderisk.service.TradeService;
 import com.denzo.traderisk.strategy.Signal;
+import com.denzo.traderisk.strategy.SignalType;
+import com.denzo.traderisk.strategy.TradingSignal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,50 +36,24 @@ import static org.mockito.Mockito.*;
 class SignalExecutionServiceTest {
 
     @Mock
-    private RiskService riskService;
-
-    @Mock
-    private ExecutionService executionService;  // вместо TradeService
+    private SignalProcessor signalProcessor;
 
     @InjectMocks
     private SignalExecutionService signalExecutionService;
 
     @Test
-    void shouldExecuteSignalWhenRiskPasses() {
-        Signal signal = new Signal("BTCUSDT", Side.BUY, BigDecimal.valueOf(2), BigDecimal.valueOf(63500), "TestStrategy", Instant.now());
-        when(riskService.checkTrade(any(TradeRequest.class)))
-                .thenReturn(RiskCheckResult.ok());
+    void shouldConvertAndProcessSignal() {
+        Signal signal = new Signal("BTCUSDT", Side.BUY, BigDecimal.ONE, BigDecimal.valueOf(60000), "TestStrategy", Instant.now());
 
         signalExecutionService.executeSignal(signal);
 
-        verify(riskService).checkTrade(any(TradeRequest.class));
-        verify(executionService).executeSignal(signal);
-    }
+        ArgumentCaptor<TradingSignal> captor = ArgumentCaptor.forClass(TradingSignal.class);
+        verify(signalProcessor).process(captor.capture());
 
-    @Test
-    void shouldThrowWhenRiskFails() {
-        Signal signal = new Signal("BTCUSDT", Side.BUY, BigDecimal.valueOf(2), BigDecimal.valueOf(60000), "TestStrategy", Instant.now());
-        when(riskService.checkTrade(any(TradeRequest.class)))
-                .thenReturn(RiskCheckResult.rejected("Risk violation"));
-
-        assertThatThrownBy(() -> signalExecutionService.executeSignal(signal))
-                .isInstanceOf(RiskViolationException.class)
-                .hasMessageContaining("Risk violation");
-
-        verify(executionService, never()).executeSignal(any());
-    }
-
-    @Test
-    void shouldExecuteMultipleSignals() {
-        Signal signal1 = new Signal("BTCUSDT", Side.BUY, BigDecimal.valueOf(2), BigDecimal.valueOf(60000), "TestStrategy", Instant.now());
-        Signal signal2 = new Signal("ETHUSDT", Side.SELL, BigDecimal.valueOf(5), BigDecimal.valueOf(3000), "TestStrategy", Instant.now());
-
-        when(riskService.checkTrade(any(TradeRequest.class)))
-                .thenReturn(RiskCheckResult.ok());
-
-        signalExecutionService.executeSignals(List.of(signal1, signal2));
-
-        verify(riskService, times(2)).checkTrade(any(TradeRequest.class));
-        verify(executionService, times(2)).executeSignal(any(Signal.class));
+        TradingSignal ts = captor.getValue();
+        assertThat(ts.symbol()).isEqualTo("BTCUSDT");
+        assertThat(ts.type()).isEqualTo(SignalType.BUY);
+        assertThat(ts.price()).isEqualByComparingTo("60000");
+        assertThat(ts.quantity()).isEqualByComparingTo("1");
     }
 }

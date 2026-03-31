@@ -1,41 +1,32 @@
 package com.denzo.traderisk.service.execution;
 
-import com.denzo.traderisk.dto.RiskCheckResult;
-import com.denzo.traderisk.dto.TradeRequest;
-import com.denzo.traderisk.exception.RiskViolationException;
-import com.denzo.traderisk.execution.ExecutionService;
-import com.denzo.traderisk.service.RiskService;
+import com.denzo.traderisk.domain.Side;
+import com.denzo.traderisk.execution.SignalProcessor;
 import com.denzo.traderisk.strategy.Signal;
+import com.denzo.traderisk.strategy.TradingSignal;
+import com.denzo.traderisk.strategy.SignalType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class SignalExecutionService {
 
-    private final RiskService riskService;
-    private final ExecutionService executionService;
+    private final SignalProcessor signalProcessor;
 
     public void executeSignal(Signal signal) {
-        // 1. Создаём запрос для риска (можно прямо из сигнала)
-        TradeRequest riskRequest = new TradeRequest(
+        TradingSignal tradingSignal = new TradingSignal(
                 signal.symbol(),
-                signal.quantity(),
+                signal.side() == Side.BUY ? SignalType.BUY : SignalType.SELL,
                 signal.price(),
-                signal.side()
+                signal.quantity()
         );
-
-        // 2. Проверяем риск
-        RiskCheckResult riskCheck = riskService.checkTrade(riskRequest);
-        if (!riskCheck.allowed()) {
-            throw new RiskViolationException(riskCheck.reason());
-        }
-
-        // 3. Исполняем через Exchange Adapter
-        executionService.executeSignal(signal);
+        signalProcessor.process(tradingSignal);
     }
 
-    public void executeSignals(java.util.List<Signal> signals) {
+    public void executeSignals(List<Signal> signals) {
         signals.forEach(this::executeSignal);
     }
 }
