@@ -12,14 +12,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.util.UUID;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ExecutionService {
 
+    private final ExecutionAdapter executionAdapter;
     private final TradeRepository tradeRepository;
     private final DomainEventPublisher domainEventPublisher;
 
@@ -28,23 +26,24 @@ public class ExecutionService {
         log.info("Executing signal: id={} {} {} {} @ {}",
                 signal.id(), signal.type(), signal.quantity(), signal.symbol(), signal.price());
 
+        ExecutionResult result = executionAdapter.execute(signal);
+
         Side side = signal.type() == SignalType.BUY ? Side.BUY : Side.SELL;
         Trade trade = new Trade(
-                signal.symbol(),
-                signal.quantity(),
-                signal.price(),
+                result.symbol(),
+                result.executedQuantity(),
+                result.executedPrice(),
                 side,
-                UUID.randomUUID().toString()
+                result.exchangeOrderId()
         );
-
-        Trade saved = tradeRepository.save(trade);
+        tradeRepository.save(trade);
 
         TradeExecutedEvent event = new TradeExecutedEvent(
-                saved.getSymbol(),
-                saved.getQuantity(),
-                saved.getPrice(),
-                saved.getSide(),
-                saved.getExchangeOrderId()
+                result.symbol(),
+                result.executedQuantity(),
+                result.executedPrice(),
+                side,
+                result.exchangeOrderId()
         );
         domainEventPublisher.publish(event);
     }

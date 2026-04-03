@@ -25,6 +25,9 @@ import static org.mockito.Mockito.when;
 class ExecutionServiceTest {
 
     @Mock
+    private ExecutionAdapter executionAdapter;
+
+    @Mock
     private TradeRepository tradeRepository;
 
     @Mock
@@ -34,25 +37,17 @@ class ExecutionServiceTest {
     private ExecutionService executionService;
 
     @Test
-    void shouldExecuteAndPublishEvent() {
-        TradingSignal signal = new TradingSignal(
-                "BTCUSDT",
-                SignalType.BUY,
-                new BigDecimal("63500"),
-                BigDecimal.ONE
-        );
+    void shouldExecuteAndPersistAndPublish() {
+        TradingSignal signal = new TradingSignal("BTCUSDT", SignalType.BUY, new BigDecimal("63500"), BigDecimal.ONE);
+        ExecutionResult result = new ExecutionResult("BTCUSDT", new BigDecimal("63500"), BigDecimal.ONE, "order-123");
+        when(executionAdapter.execute(signal)).thenReturn(result);
 
-        Trade savedTrade = new Trade(
-                "BTCUSDT",
-                BigDecimal.ONE,
-                new BigDecimal("63500"),
-                Side.BUY,
-                "order-123"
-        );
+        Trade savedTrade = new Trade("BTCUSDT", BigDecimal.ONE, new BigDecimal("63500"), Side.BUY, "order-123");
         when(tradeRepository.save(any(Trade.class))).thenReturn(savedTrade);
 
         executionService.execute(signal);
 
+        verify(executionAdapter).execute(signal);
         verify(tradeRepository).save(any(Trade.class));
         ArgumentCaptor<TradeExecutedEvent> eventCaptor = ArgumentCaptor.forClass(TradeExecutedEvent.class);
         verify(domainEventPublisher).publish(eventCaptor.capture());

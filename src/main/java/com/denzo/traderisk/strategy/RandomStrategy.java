@@ -18,15 +18,13 @@ public class RandomStrategy implements Strategy {
 
     @Override
     public Optional<TradingSignal> generateSignal(String symbol, BigDecimal currentPrice) {
-        if (random.nextBoolean()) {
-            log.debug("RandomStrategy generated BUY signal for {} at price {}", symbol, currentPrice);
-            return Optional.of(new TradingSignal(
-                    symbol,
-                    SignalType.BUY,
-                    currentPrice,
-                    BigDecimal.ONE
-            ));
-        }
-        return Optional.empty();
+        // временно: всегда генерируем сигнал для демонстрации
+        log.debug("RandomStrategy generated BUY signal for {} at price {}", symbol, currentPrice);
+        return Optional.of(new TradingSignal(
+                symbol,
+                SignalType.BUY,
+                currentPrice,
+                BigDecimal.ONE
+        ));
     }
 }
