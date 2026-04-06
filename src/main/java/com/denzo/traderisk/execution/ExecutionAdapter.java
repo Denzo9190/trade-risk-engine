@@ -1,7 +1,7 @@
 package com.denzo.traderisk.execution;
 
-import com.denzo.traderisk.strategy.TradingSignal;
+import com.denzo.traderisk.execution.order.Order;
 
 public interface ExecutionAdapter {
-    ExecutionResult execute(TradingSignal signal);
+    Order submitOrder(Order order);
 }

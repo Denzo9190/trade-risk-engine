@@ -10,9 +10,10 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
+        format_sql: false
         jdbc:
           time_zone: UTC
       flyway:
@@ -31,3 +32,10 @@ risk:
 strategy:
   runner:
     interval: 10000   # миллисекунды
+
+
+logging:
+  level:
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql: WARN
+    com.denzo.traderisk: INFO

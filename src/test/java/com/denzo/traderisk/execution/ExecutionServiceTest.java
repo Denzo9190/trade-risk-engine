@@ -4,6 +4,8 @@ import com.denzo.traderisk.domain.Side;
 import com.denzo.traderisk.domain.Trade;
 import com.denzo.traderisk.event.DomainEventPublisher;
 import com.denzo.traderisk.event.TradeExecutedEvent;
+import com.denzo.traderisk.execution.order.Order;
+import com.denzo.traderisk.execution.order.OrderType;
 import com.denzo.traderisk.repository.TradeRepository;
 import com.denzo.traderisk.strategy.SignalType;
 import com.denzo.traderisk.strategy.TradingSignal;
@@ -37,17 +39,17 @@ class ExecutionServiceTest {
     private ExecutionService executionService;
 
     @Test
-    void shouldExecuteAndPersistAndPublish() {
+    void shouldCreateOrderAndPersistTrade() {
         TradingSignal signal = new TradingSignal("BTCUSDT", SignalType.BUY, new BigDecimal("63500"), BigDecimal.ONE);
-        ExecutionResult result = new ExecutionResult("BTCUSDT", new BigDecimal("63500"), BigDecimal.ONE, "order-123");
-        when(executionAdapter.execute(signal)).thenReturn(result);
+        Order order = new Order("BTCUSDT", Side.BUY, BigDecimal.ONE, OrderType.MARKET);
+        when(executionAdapter.submitOrder(any(Order.class))).thenReturn(order);
 
-        Trade savedTrade = new Trade("BTCUSDT", BigDecimal.ONE, new BigDecimal("63500"), Side.BUY, "order-123");
+        Trade savedTrade = new Trade("BTCUSDT", BigDecimal.ONE, new BigDecimal("63500"), Side.BUY, order.getId());
         when(tradeRepository.save(any(Trade.class))).thenReturn(savedTrade);
 
         executionService.execute(signal);
 
-        verify(executionAdapter).execute(signal);
+        verify(executionAdapter).submitOrder(any(Order.class));
         verify(tradeRepository).save(any(Trade.class));
         ArgumentCaptor<TradeExecutedEvent> eventCaptor = ArgumentCaptor.forClass(TradeExecutedEvent.class);
         verify(domainEventPublisher).publish(eventCaptor.capture());
@@ -57,6 +59,6 @@ class ExecutionServiceTest {
         assertThat(event.executedQuantity()).isEqualByComparingTo("1");
         assertThat(event.executedPrice()).isEqualByComparingTo("63500");
         assertThat(event.side()).isEqualTo(Side.BUY);
-        assertThat(event.exchangeOrderId()).isEqualTo("order-123");
+        assertThat(event.exchangeOrderId()).isEqualTo(order.getId());
     }
 }

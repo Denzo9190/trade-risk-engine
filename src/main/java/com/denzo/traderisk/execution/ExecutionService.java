@@ -4,6 +4,8 @@ import com.denzo.traderisk.domain.Side;
 import com.denzo.traderisk.domain.Trade;
 import com.denzo.traderisk.event.DomainEventPublisher;
 import com.denzo.traderisk.event.TradeExecutedEvent;
+import com.denzo.traderisk.execution.order.Order;
+import com.denzo.traderisk.execution.order.OrderType;
 import com.denzo.traderisk.repository.TradeRepository;
 import com.denzo.traderisk.strategy.SignalType;
 import com.denzo.traderisk.strategy.TradingSignal;
@@ -26,24 +28,35 @@ public class ExecutionService {
         log.info("Executing signal: id={} {} {} {} @ {}",
                 signal.id(), signal.type(), signal.quantity(), signal.symbol(), signal.price());
 
-        ExecutionResult result = executionAdapter.execute(signal);
-
+        // 1. Создаём ордер
         Side side = signal.type() == SignalType.BUY ? Side.BUY : Side.SELL;
-        Trade trade = new Trade(
-                result.symbol(),
-                result.executedQuantity(),
-                result.executedPrice(),
+        Order order = new Order(
+                signal.symbol(),
                 side,
-                result.exchangeOrderId()
+                signal.quantity(),
+                OrderType.MARKET   // пока market order
+        );
+
+        // 2. Отправляем на биржу через адаптер
+        Order submittedOrder = executionAdapter.submitOrder(order);
+
+        // 3. Создаём сделку (для упрощения: полное исполнение)
+        Trade trade = new Trade(
+                submittedOrder.getSymbol(),
+                submittedOrder.getQuantity(),
+                signal.price(),
+                submittedOrder.getSide(),
+                submittedOrder.getId()
         );
         tradeRepository.save(trade);
 
+        // 4. Публикуем событие
         TradeExecutedEvent event = new TradeExecutedEvent(
-                result.symbol(),
-                result.executedQuantity(),
-                result.executedPrice(),
-                side,
-                result.exchangeOrderId()
+                trade.getSymbol(),
+                trade.getQuantity(),
+                trade.getPrice(),
+                trade.getSide(),
+                trade.getExchangeOrderId()
         );
         domainEventPublisher.publish(event);
     }

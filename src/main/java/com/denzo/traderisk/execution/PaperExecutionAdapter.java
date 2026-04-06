@@ -1,11 +1,10 @@
 package com.denzo.traderisk.execution;
 
-import com.denzo.traderisk.strategy.TradingSignal;
+import com.denzo.traderisk.execution.order.Order;
+import com.denzo.traderisk.execution.order.OrderStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
-
-import java.util.UUID;
 
 @Slf4j
 @Component
@@ -13,13 +12,12 @@ import java.util.UUID;
 public class PaperExecutionAdapter implements ExecutionAdapter {
 
     @Override
-    public ExecutionResult execute(TradingSignal signal) {
-        log.info("Paper execution: {} {} {} @ {}", signal.type(), signal.quantity(), signal.symbol(), signal.price());
-        return new ExecutionResult(
-                signal.symbol(),
-                signal.price(),
-                signal.quantity(),
-                UUID.randomUUID().toString()
-        );
+    public Order submitOrder(Order order) {
+        log.info("Paper execution: submitting order {} for {} {} {}",
+                order.getId(), order.getSide(), order.getQuantity(), order.getSymbol());
+        // Симуляция полного исполнения
+        order.markSubmitted();
+        order.markFilled();
+        return order;
     }
 }
