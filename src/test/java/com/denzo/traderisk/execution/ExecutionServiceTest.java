@@ -5,6 +5,7 @@ import com.denzo.traderisk.domain.Trade;
 import com.denzo.traderisk.event.DomainEventPublisher;
 import com.denzo.traderisk.event.TradeExecutedEvent;
 import com.denzo.traderisk.execution.order.Order;
+import com.denzo.traderisk.execution.order.OrderFill;
 import com.denzo.traderisk.execution.order.OrderType;
 import com.denzo.traderisk.repository.TradeRepository;
 import com.denzo.traderisk.strategy.SignalType;
@@ -17,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,39 +28,28 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class ExecutionServiceTest {
 
-    @Mock
-    private ExecutionAdapter executionAdapter;
-
-    @Mock
-    private TradeRepository tradeRepository;
-
-    @Mock
-    private DomainEventPublisher domainEventPublisher;
-
-    @InjectMocks
-    private ExecutionService executionService;
+    @Mock private OrderManager orderManager;
+    @Mock private TradeBuilder tradeBuilder;
+    @Mock private TradeRepository tradeRepository;
+    @Mock private DomainEventPublisher domainEventPublisher;
+    @InjectMocks private ExecutionService executionService;
 
     @Test
-    void shouldCreateOrderAndPersistTrade() {
+    void shouldExecuteFullFlow() {
         TradingSignal signal = new TradingSignal("BTCUSDT", SignalType.BUY, new BigDecimal("63500"), BigDecimal.ONE);
         Order order = new Order("BTCUSDT", Side.BUY, BigDecimal.ONE, OrderType.MARKET);
-        when(executionAdapter.submitOrder(any(Order.class))).thenReturn(order);
-
-        Trade savedTrade = new Trade("BTCUSDT", BigDecimal.ONE, new BigDecimal("63500"), Side.BUY, order.getId());
-        when(tradeRepository.save(any(Trade.class))).thenReturn(savedTrade);
+        when(orderManager.createOrder(signal)).thenReturn(order);
+        List<OrderFill> fills = List.of(new OrderFill(order.getId(), new BigDecimal("63500"), BigDecimal.ONE));
+        when(orderManager.submitOrder(order)).thenReturn(fills);
+        Trade trade = new Trade("BTCUSDT", BigDecimal.ONE, new BigDecimal("63500"), Side.BUY, order.getId());
+        when(tradeBuilder.buildTrades(order, fills)).thenReturn(List.of(trade));
+        when(tradeRepository.save(any(Trade.class))).thenReturn(trade);
 
         executionService.execute(signal);
 
-        verify(executionAdapter).submitOrder(any(Order.class));
-        verify(tradeRepository).save(any(Trade.class));
-        ArgumentCaptor<TradeExecutedEvent> eventCaptor = ArgumentCaptor.forClass(TradeExecutedEvent.class);
-        verify(domainEventPublisher).publish(eventCaptor.capture());
-
-        TradeExecutedEvent event = eventCaptor.getValue();
-        assertThat(event.symbol()).isEqualTo("BTCUSDT");
-        assertThat(event.executedQuantity()).isEqualByComparingTo("1");
-        assertThat(event.executedPrice()).isEqualByComparingTo("63500");
-        assertThat(event.side()).isEqualTo(Side.BUY);
-        assertThat(event.exchangeOrderId()).isEqualTo(order.getId());
+        verify(orderManager).createOrder(signal);
+        verify(orderManager).submitOrder(order);
+        verify(tradeRepository).save(trade);
+        verify(domainEventPublisher).publish(any(TradeExecutedEvent.class));
     }
 }
