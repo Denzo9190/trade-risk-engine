@@ -26,5 +26,18 @@ public class RandomStrategy implements Strategy {
                 currentPrice,
                 BigDecimal.ONE
         ));
+
+        /* === ОРИГИНАЛЬНАЯ ЛОГИКА (с вероятностью 50%) ===
+        if (random.nextBoolean()) {
+            log.debug("RandomStrategy generated BUY signal for {} at price {}", symbol, currentPrice);
+            return Optional.of(new TradingSignal(
+                    symbol,
+                    SignalType.BUY,
+                    currentPrice,
+                    BigDecimal.ONE
+            ));
+        }
+        return Optional.empty();
+        */
     }
 }
