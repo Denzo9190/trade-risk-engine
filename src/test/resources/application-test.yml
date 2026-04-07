@@ -16,5 +16,8 @@ spring:
     enabled: false
 
 logging:
+  pattern:
+    console: "%msg%n"
   level:
-    com.denzo.traderisk: DEBUG
+    com.denzo.traderisk: INFO
+    org.springframework: WARN
