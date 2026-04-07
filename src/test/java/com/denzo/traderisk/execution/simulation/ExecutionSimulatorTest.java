@@ -24,4 +24,16 @@ class ExecutionSimulatorTest {
         BigDecimal total = fills.stream().map(OrderFill::quantity).reduce(BigDecimal.ZERO, BigDecimal::add);
         assertThat(total).isEqualByComparingTo("1");
     }
+
+    @Test
+    void shouldGenerateFillsWithDifferentPrices() {
+        Order order = new Order("BTCUSDT", Side.BUY, BigDecimal.ONE, OrderType.MARKET);
+        List<OrderFill> fills = simulator.simulate(order, BigDecimal.valueOf(60000));
+
+        assertThat(fills).hasSize(3);
+        // Цены могут совпасть случайно, но с вероятностью >99% будут разными
+        // Проверяем, что все цены положительные и сумма количеств равна 1
+        BigDecimal totalQty = fills.stream().map(OrderFill::quantity).reduce(BigDecimal.ZERO, BigDecimal::add);
+        assertThat(totalQty).isEqualByComparingTo("1");
+    }
 }

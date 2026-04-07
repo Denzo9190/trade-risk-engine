@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -18,7 +19,15 @@ public class ExecutionSimulator {
 
     public List<OrderFill> simulate(Order order, BigDecimal referencePrice) {
         latencyModel.simulateLatency();
-        BigDecimal executionPrice = slippageModel.apply(referencePrice, order.getSide());
-        return partialFillModel.generateFills(order, executionPrice);
+
+        List<BigDecimal> quantities = partialFillModel.generateFillQuantities(order);
+        List<OrderFill> fills = new ArrayList<>();
+
+        for (BigDecimal qty : quantities) {
+            BigDecimal price = slippageModel.apply(referencePrice, order.getSide());
+            fills.add(new OrderFill(order.getId(), price, qty));
+        }
+
+        return fills;
     }
 }
