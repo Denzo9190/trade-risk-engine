@@ -50,10 +50,13 @@ public class Order {
     }
 
     public void applyFill(BigDecimal fillQty) {
-        this.filledQuantity = this.filledQuantity.add(fillQty);
+        BigDecimal newFilled = this.filledQuantity.add(fillQty);
+        if (newFilled.compareTo(this.quantity) > 0) {
+            throw new IllegalStateException("Order overfilled: " + this.id);
+        }
+        this.filledQuantity = newFilled;
         if (this.filledQuantity.compareTo(this.quantity) >= 0) {
             this.status = OrderStatus.FILLED;
-            this.filledQuantity = this.quantity; // фикс переполнения
         } else {
             this.status = OrderStatus.PARTIALLY_FILLED;
         }

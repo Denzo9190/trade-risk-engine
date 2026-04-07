@@ -39,3 +39,8 @@ logging:
     org.hibernate.SQL: WARN
     org.hibernate.type.descriptor.sql: WARN
     com.denzo.traderisk.execution: DEBUG
+
+execution:
+  latency:
+    min: 20
+    max: 120

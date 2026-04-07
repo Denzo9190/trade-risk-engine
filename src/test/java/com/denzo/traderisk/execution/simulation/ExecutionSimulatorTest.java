@@ -20,11 +20,8 @@ class ExecutionSimulatorTest {
     void shouldGenerateMultipleFills() {
         Order order = new Order("BTCUSDT", Side.BUY, BigDecimal.ONE, OrderType.MARKET);
         List<OrderFill> fills = simulator.simulate(order, BigDecimal.valueOf(60000));
-
         assertThat(fills).hasSize(3);
-        BigDecimal total = fills.stream()
-                .map(OrderFill::quantity)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal total = fills.stream().map(OrderFill::quantity).reduce(BigDecimal.ZERO, BigDecimal::add);
         assertThat(total).isEqualByComparingTo("1");
     }
 }

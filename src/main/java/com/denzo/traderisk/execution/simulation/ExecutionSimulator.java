@@ -18,7 +18,7 @@ public class ExecutionSimulator {
 
     public List<OrderFill> simulate(Order order, BigDecimal referencePrice) {
         latencyModel.simulateLatency();
-        BigDecimal executionPrice = slippageModel.apply(referencePrice);
+        BigDecimal executionPrice = slippageModel.apply(referencePrice, order.getSide());
         return partialFillModel.generateFills(order, executionPrice);
     }
 }
