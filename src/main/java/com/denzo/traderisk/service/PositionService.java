@@ -5,6 +5,9 @@ import com.denzo.traderisk.config.FinancialConstants;
 import com.denzo.traderisk.domain.Side;
 import com.denzo.traderisk.domain.Trade;
 import com.denzo.traderisk.dto.PositionResponse;
+import com.denzo.traderisk.event.DomainEventPublisher;
+import com.denzo.traderisk.event.PositionUpdatedEvent;
+import com.denzo.traderisk.event.TradeExecutedEvent;
 import com.denzo.traderisk.marketdata.MarketDataEngine;
 import com.denzo.traderisk.math.FinancialMath;
 import com.denzo.traderisk.repository.TradeRepository;
@@ -22,6 +25,7 @@ public class PositionService {
     private final TradeRepository tradeRepository;
     private final MarketDataEngine marketDataEngine;
     private final PositionCache positionCache;
+    private final DomainEventPublisher domainEventPublisher;
 
     public PositionResponse getPosition(String symbol) {
         return positionCache.computeIfAbsent(symbol, this::calculatePosition);
@@ -81,5 +85,10 @@ public class PositionService {
 
     public void updatePosition(String symbol, BigDecimal quantity, BigDecimal price) {
         positionCache.remove(symbol);
+    }
+
+    public void applyTrade(TradeExecutedEvent event) {
+        // Инвалидируем кэш – позиция пересчитается при следующем запросе
+        positionCache.remove(event.symbol());
     }
 }

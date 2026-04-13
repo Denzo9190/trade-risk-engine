@@ -18,6 +18,8 @@ import java.util.List;
 public class LedgerService {
 
     private final LedgerRepository ledgerRepository;
+    private final PositionService positionService;
+    private final RealisedPnlService realisedPnlService;
 
     @Transactional
     public void recordTrade(TradeExecutedEvent event, PositionResponse positionAfter, BigDecimal realisedPnlAfter) {
@@ -66,5 +68,11 @@ public class LedgerService {
 
     public List<LedgerEntry> getAll() {
         return ledgerRepository.findAll();
+    }
+
+    public void record(TradeExecutedEvent event) {
+        PositionResponse position = positionService.getPosition(event.symbol());
+        BigDecimal realisedPnl = realisedPnlService.calculateRealisedPnl(event.symbol()).realisedPnl();
+        recordTrade(event, position, realisedPnl);
     }
 }

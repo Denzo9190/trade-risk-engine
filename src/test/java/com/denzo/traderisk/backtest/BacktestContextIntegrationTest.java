@@ -92,6 +92,11 @@ public class BacktestContextIntegrationTest {
                 .build();
 
         context.run("BTCUSDT", List.of(t1, t2));
+        // Принудительно обновляем кэш цен для второго тика
+        priceCache.put("BTCUSDT", new BigDecimal("61000"));
+
+        // Инвалидируем кэш позиции, чтобы пересчитать PnL с новой ценой
+        positionService.updatePosition("BTCUSDT", BigDecimal.ZERO, BigDecimal.ZERO);
 
         PositionResponse finalPosition = positionService.getPosition("BTCUSDT");
         assertThat(finalPosition.unrealisedPnl()).isEqualByComparingTo("1000.00000000");
