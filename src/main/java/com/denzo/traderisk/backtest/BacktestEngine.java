@@ -59,7 +59,8 @@ public class BacktestEngine {
 
         List<Trade> trades = tradeService.getAll();
         BigDecimal realisedPnl = realisedPnlService.calculateRealisedPnl(symbol).realisedPnl();
-        BigDecimal unrealisedPnl = positionService.getPosition(symbol).unrealisedPnl();
+        PositionResponse posResp = positionService.getPositionResponse(symbol);
+        BigDecimal unrealisedPnl = posResp.unrealisedPnl();
 
         long totalTrades = trades.size();
         long winningTrades = trades.stream()

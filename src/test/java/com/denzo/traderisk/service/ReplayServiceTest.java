@@ -3,7 +3,7 @@ package com.denzo.traderisk.service;
 import com.denzo.traderisk.domain.Side;
 import com.denzo.traderisk.event.EventStore;
 import com.denzo.traderisk.event.TradeExecutedEvent;
-import org.junit.jupiter.api.BeforeEach;
+import com.denzo.traderisk.repository.PositionRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -13,8 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.util.List;
 
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ReplayServiceTest {
@@ -26,6 +25,9 @@ class ReplayServiceTest {
     private PositionService positionService;
 
     @Mock
+    private PositionRepository positionRepository;
+
+    @Mock
     private RealisedPnlService realisedPnlService;
 
     @Mock
@@ -34,19 +36,16 @@ class ReplayServiceTest {
     @InjectMocks
     private ReplayService replayService;
 
-    @BeforeEach
-    void setUp() {
-        // Настраиваем, чтобы EventStore возвращал список событий
-        TradeExecutedEvent event = new TradeExecutedEvent("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000), Side.BUY, "1");
-        when(eventStore.getAll()).thenReturn(List.of(event));
-    }
-
     @Test
     void shouldReplayEvents() {
+        TradeExecutedEvent event1 = new TradeExecutedEvent("BTCUSDT", BigDecimal.ONE, new BigDecimal("60000"), Side.BUY, "order1");
+        TradeExecutedEvent event2 = new TradeExecutedEvent("BTCUSDT", BigDecimal.ONE, new BigDecimal("61000"), Side.SELL, "order2");
+        when(eventStore.getAll()).thenReturn(List.of(event1, event2));
+
         replayService.replayAll();
-        verify(positionService).updatePosition("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000));
-        verify(realisedPnlService).calculateRealisedPnl("BTCUSDT");
-        // ledgerService не вызывается напрямую в replay, так как события уже записаны,
-        // но при желании можно проверить, что метод recordTrade не вызывается повторно.
+
+        verify(positionRepository).clear();
+        verify(positionService, times(2)).applyTrade(any(TradeExecutedEvent.class));
+        verify(realisedPnlService, times(2)).calculateRealisedPnl("BTCUSDT");
     }
 }
