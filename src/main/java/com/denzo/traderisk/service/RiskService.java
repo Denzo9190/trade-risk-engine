@@ -3,6 +3,8 @@ package com.denzo.traderisk.service;
 import com.denzo.traderisk.config.RiskLimits;
 import com.denzo.traderisk.dto.*;
 import com.denzo.traderisk.marketdata.MarketDataEngine;
+import com.denzo.traderisk.portfolio.PortfolioService;
+import com.denzo.traderisk.portfolio.PortfolioSnapshot;
 import com.denzo.traderisk.strategy.TradingSignal;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -66,7 +68,7 @@ public class RiskService {
         }
 
         // 4. Проверка общей экспозиции портфеля
-        PortfolioResponse portfolio = portfolioService.getPortfolio();
+        PortfolioSnapshot portfolio = portfolioService.getPortfolio();
         BigDecimal tradeExposure = request.quantity().abs().multiply(request.price());
         BigDecimal newExposure = portfolio.totalExposure().add(tradeExposure);
         if (newExposure.compareTo(limits.getMaxPortfolioExposure()) > 0) {

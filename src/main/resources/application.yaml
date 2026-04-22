@@ -44,3 +44,7 @@ execution:
   latency:
     min: 20
     max: 120
+
+marketdata:
+  feed:
+    enabled: false

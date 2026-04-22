@@ -3,6 +3,8 @@ package com.denzo.traderisk.repository;
 import com.denzo.traderisk.domain.Position;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,5 +25,9 @@ public class PositionRepository {
 
     public void clear() {
         positions.clear();
+    }
+
+    public List<Position> findAll() {
+        return new ArrayList<>(positions.values());
     }
 }

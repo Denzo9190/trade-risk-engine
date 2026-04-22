@@ -2,9 +2,13 @@ package com.denzo.traderisk.service;
 
 import com.denzo.traderisk.config.RiskLimits;
 import com.denzo.traderisk.domain.Side;
-import com.denzo.traderisk.dto.*;
+import com.denzo.traderisk.dto.PositionResponse;
+import com.denzo.traderisk.dto.RiskCheckResult;
+import com.denzo.traderisk.dto.TradeRequest;
 import com.denzo.traderisk.marketdata.MarketDataEngine;
 import com.denzo.traderisk.marketdata.historical.HistoricalDataNotFoundException;
+import com.denzo.traderisk.portfolio.PortfolioService;
+import com.denzo.traderisk.portfolio.PortfolioSnapshot;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,7 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -47,7 +51,7 @@ class RiskServiceTest {
         TradeRequest request = new TradeRequest("BTCUSDT", BigDecimal.valueOf(2), new BigDecimal("60500"), Side.BUY);
         when(marketDataEngine.getPrice("BTCUSDT")).thenReturn(new BigDecimal("60000"));
         when(positionService.getPosition("BTCUSDT")).thenReturn(new PositionResponse("BTCUSDT", BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO));
-        when(portfolioService.getPortfolio()).thenReturn(new PortfolioResponse(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, List.of()));
+        when(portfolioService.getPortfolio()).thenReturn(new PortfolioSnapshot(Map.of(), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO));
 
         RiskCheckResult result = riskService.checkTrade(request);
         assertThat(result.allowed()).isTrue();
@@ -92,7 +96,7 @@ class RiskServiceTest {
         TradeRequest request = new TradeRequest("BTCUSDT", BigDecimal.valueOf(4), BigDecimal.valueOf(60000), Side.BUY);
         when(marketDataEngine.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(60000));
         when(positionService.getPosition("BTCUSDT")).thenReturn(new PositionResponse("BTCUSDT", BigDecimal.ONE, BigDecimal.valueOf(60000), BigDecimal.ZERO));
-        when(portfolioService.getPortfolio()).thenReturn(new PortfolioResponse(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.valueOf(100_000), List.of()));
+        when(portfolioService.getPortfolio()).thenReturn(new PortfolioSnapshot(Map.of(), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.valueOf(100_000)));
 
         RiskCheckResult result = riskService.checkTrade(request);
         assertThat(result.allowed()).isTrue();
@@ -114,7 +118,7 @@ class RiskServiceTest {
         TradeRequest request = new TradeRequest("BTCUSDT", BigDecimal.valueOf(3), BigDecimal.valueOf(60000), Side.BUY);
         when(marketDataEngine.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(60000));
         when(positionService.getPosition("BTCUSDT")).thenReturn(new PositionResponse("BTCUSDT", BigDecimal.ONE, BigDecimal.valueOf(60000), BigDecimal.ZERO));
-        when(portfolioService.getPortfolio()).thenReturn(new PortfolioResponse(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.valueOf(400_000), List.of()));
+        when(portfolioService.getPortfolio()).thenReturn(new PortfolioSnapshot(Map.of(), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.valueOf(400_000)));
 
         RiskCheckResult result = riskService.checkTrade(request);
         assertThat(result.allowed()).isFalse();
@@ -126,7 +130,7 @@ class RiskServiceTest {
         TradeRequest request = new TradeRequest("BTCUSDT", BigDecimal.valueOf(2), BigDecimal.valueOf(60000), Side.BUY);
         when(marketDataEngine.getPrice("BTCUSDT")).thenReturn(BigDecimal.valueOf(60000));
         when(positionService.getPosition("BTCUSDT")).thenReturn(new PositionResponse("BTCUSDT", BigDecimal.ONE, BigDecimal.valueOf(60000), BigDecimal.ZERO));
-        when(portfolioService.getPortfolio()).thenReturn(new PortfolioResponse(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.valueOf(100_000), List.of()));
+        when(portfolioService.getPortfolio()).thenReturn(new PortfolioSnapshot(Map.of(), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.valueOf(100_000)));
 
         RiskCheckResult result = riskService.checkTrade(request);
         assertThat(result.allowed()).isTrue();
