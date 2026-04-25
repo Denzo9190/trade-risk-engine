@@ -32,6 +32,8 @@ risk:
 strategy:
   runner:
     interval: 10000   # миллисекунды
+  auto:
+    enabled: false   # выключаем автоматические стратегии
 
 
 logging:
@@ -47,4 +49,4 @@ execution:
 
 marketdata:
   feed:
-    enabled: false
+    enabled: true

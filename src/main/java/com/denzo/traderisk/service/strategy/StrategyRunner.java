@@ -1,12 +1,11 @@
 package com.denzo.traderisk.service.strategy;
 
 import com.denzo.traderisk.service.execution.SignalExecutionService;
-import com.denzo.traderisk.strategy.Signal;
 import com.denzo.traderisk.strategy.StrategyService;
+import com.denzo.traderisk.strategy.TradingSignal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -43,7 +42,7 @@ public class StrategyRunner {
         String symbol = "BTCUSDT";
         log.info("Running strategies for symbol {}", symbol);
 
-        List<Signal> signals = strategyService.evaluateStrategies(symbol);
+        List<TradingSignal> signals = strategyService.evaluateStrategies(symbol);
         log.info("Generated {} signals", signals.size());
 
         if (!signals.isEmpty()) {

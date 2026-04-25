@@ -2,17 +2,15 @@ package com.denzo.traderisk.backtest;
 
 import com.denzo.traderisk.domain.Side;
 import com.denzo.traderisk.dto.PositionResponse;
-import com.denzo.traderisk.marketdata.InMemoryPriceCache;
-import com.denzo.traderisk.marketdata.MarketDataEngine;
 import com.denzo.traderisk.marketdata.PriceCache;
 import com.denzo.traderisk.marketdata.adapter.MarketDataAdapter;
-import com.denzo.traderisk.marketdata.historical.HistoricalMarketDataAdapter;
 import com.denzo.traderisk.marketdata.historical.InMemoryHistoricalMarketDataService;
 import com.denzo.traderisk.service.PositionService;
 import com.denzo.traderisk.service.RealisedPnlService;
 import com.denzo.traderisk.service.TradeService;
 import com.denzo.traderisk.service.execution.SignalExecutionService;
-import com.denzo.traderisk.strategy.Signal;
+import com.denzo.traderisk.strategy.SignalType;
+import com.denzo.traderisk.strategy.TradingSignal;
 import com.denzo.traderisk.strategy.TradingStrategy;
 import com.denzo.traderisk.time.BacktestTimeProvider;
 import org.junit.jupiter.api.Test;
@@ -68,14 +66,7 @@ public class BacktestContextIntegrationTest {
         historicalData.addPrice("BTCUSDT", t2, new BigDecimal("61000"));
 
         TradingStrategy mockStrategy = mock(TradingStrategy.class);
-        Signal signal = new Signal(
-                "BTCUSDT",
-                Side.BUY,
-                BigDecimal.ONE,
-                new BigDecimal("60000"),
-                "MockStrategy",
-                t1
-        );
+        TradingSignal signal = new TradingSignal("BTCUSDT", SignalType.BUY, new BigDecimal("60000"), BigDecimal.ONE);
         when(mockStrategy.generateSignal("BTCUSDT"))
                 .thenReturn(Optional.of(signal))
                 .thenReturn(Optional.empty());

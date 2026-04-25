@@ -2,8 +2,9 @@ package com.denzo.traderisk.service.strategy;
 
 import com.denzo.traderisk.domain.Side;
 import com.denzo.traderisk.service.execution.SignalExecutionService;
-import com.denzo.traderisk.strategy.Signal;
+import com.denzo.traderisk.strategy.SignalType;
 import com.denzo.traderisk.strategy.StrategyService;
+import com.denzo.traderisk.strategy.TradingSignal;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -32,14 +33,7 @@ class StrategyRunnerTest {
 
     @Test
     void shouldRunStrategiesAndExecuteSignals() {
-        Signal signal = new Signal(
-                "BTCUSDT",
-                Side.BUY,
-                BigDecimal.ONE,
-                BigDecimal.valueOf(60000),
-                "TestStrategy",
-                Instant.now()
-        );
+        TradingSignal signal = new TradingSignal("BTCUSDT", SignalType.BUY, new BigDecimal("60000"), BigDecimal.ONE);
 
         when(strategyService.evaluateStrategies(anyString()))
                 .thenReturn(List.of(signal));

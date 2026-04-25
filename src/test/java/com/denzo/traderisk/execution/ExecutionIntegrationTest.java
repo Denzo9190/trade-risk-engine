@@ -8,8 +8,9 @@ import com.denzo.traderisk.repository.LedgerRepository;
 import com.denzo.traderisk.repository.TradeRepository;
 import com.denzo.traderisk.service.PositionService;
 import com.denzo.traderisk.service.execution.SignalExecutionService;
+import com.denzo.traderisk.strategy.SignalType;
 import com.denzo.traderisk.strategy.StrategyEngine;
-import com.denzo.traderisk.strategy.Signal;
+import com.denzo.traderisk.strategy.TradingSignal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,7 +59,7 @@ public class ExecutionIntegrationTest {
 
     @Test
     void shouldExecuteSignalAndUpdatePosition() {
-        Signal signal = new Signal("BTCUSDT", Side.BUY, BigDecimal.ONE, new BigDecimal("63500"), "TestStrategy", Instant.now());
+        TradingSignal signal = new TradingSignal("BTCUSDT", SignalType.BUY, new BigDecimal("63500"), BigDecimal.ONE);
         signalExecutionService.executeSignal(signal);
 
         PositionResponse position = positionService.getPosition("BTCUSDT");

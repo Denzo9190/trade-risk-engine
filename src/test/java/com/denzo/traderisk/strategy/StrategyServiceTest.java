@@ -1,6 +1,5 @@
 package com.denzo.traderisk.strategy;
 
-import com.denzo.traderisk.domain.Side;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -8,12 +7,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,49 +31,26 @@ class StrategyServiceTest {
     }
 
     @Test
-    void shouldCollectSignalsFromAllStrategies() {
-        Signal signal1 = new Signal(
-                "BTCUSDT",
-                Side.BUY,
-                BigDecimal.ONE,
-                BigDecimal.valueOf(60000),
-                "Strategy1",
-                Instant.now()
-        );
-        Signal signal2 = new Signal(
-                "BTCUSDT",
-                Side.SELL,
-                BigDecimal.valueOf(2),
-                BigDecimal.valueOf(61000),
-                "Strategy2",
-                Instant.now()
-        );
+    void shouldCollectSignals() {
+        TradingSignal s1 = new TradingSignal(UUID.randomUUID(), "BTCUSDT", SignalType.BUY, BigDecimal.valueOf(63500), BigDecimal.ONE);
+        TradingSignal s2 = new TradingSignal(UUID.randomUUID(), "BTCUSDT", SignalType.SELL, BigDecimal.valueOf(63500), BigDecimal.valueOf(2));
 
-        when(strategy1.generateSignal(anyString())).thenReturn(Optional.of(signal1));
-        when(strategy2.generateSignal(anyString())).thenReturn(Optional.of(signal2));
+        when(strategy1.generateSignal("BTCUSDT")).thenReturn(Optional.of(s1));
+        when(strategy2.generateSignal("BTCUSDT")).thenReturn(Optional.of(s2));
 
-        List<Signal> signals = strategyService.evaluateStrategies("BTCUSDT");
-
-        assertThat(signals).containsExactly(signal1, signal2);
+        List<TradingSignal> signals = strategyService.evaluateStrategies("BTCUSDT");
+        assertThat(signals).containsExactly(s1, s2);
     }
 
     @Test
-    void shouldSkipEmptySignals() {
-        when(strategy1.generateSignal(anyString())).thenReturn(Optional.empty());
-        when(strategy2.generateSignal(anyString())).thenReturn(Optional.of(
-                new Signal(
-                        "BTCUSDT",
-                        Side.BUY,
-                        BigDecimal.ONE,
-                        BigDecimal.valueOf(60000),
-                        "Strategy2",
-                        Instant.now()
-                )
+    void shouldSkipEmpty() {
+        when(strategy1.generateSignal("BTCUSDT")).thenReturn(Optional.empty());
+        when(strategy2.generateSignal("BTCUSDT")).thenReturn(Optional.of(
+                new TradingSignal(UUID.randomUUID(), "BTCUSDT", SignalType.BUY, BigDecimal.valueOf(63500), BigDecimal.ONE)
         ));
 
-        List<Signal> signals = strategyService.evaluateStrategies("BTCUSDT");
-
+        List<TradingSignal> signals = strategyService.evaluateStrategies("BTCUSDT");
         assertThat(signals).hasSize(1);
-        assertThat(signals.get(0).strategyName()).isEqualTo("Strategy2");
+        assertThat(signals.get(0).type()).isEqualTo(SignalType.BUY);
     }
 }

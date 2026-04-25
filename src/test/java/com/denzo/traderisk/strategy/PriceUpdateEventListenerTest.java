@@ -23,8 +23,9 @@ class PriceUpdateEventListenerTest {
     void setUp() {
         listener = new PriceUpdateEventListener();
 
-        // Настраиваем логгер для проверки вывода
         Logger logger = (Logger) LoggerFactory.getLogger(PriceUpdateEventListener.class);
+        // Устанавливаем уровень DEBUG, чтобы логи записывались
+        logger.setLevel(Level.DEBUG);
         listAppender = new ListAppender<>();
         listAppender.start();
         logger.addAppender(listAppender);
@@ -38,7 +39,7 @@ class PriceUpdateEventListenerTest {
 
         assertThat(listAppender.list)
                 .isNotEmpty()
-                .anyMatch(log -> log.getLevel() == Level.INFO
+                .anyMatch(log -> log.getLevel() == Level.DEBUG
                         && log.getFormattedMessage().contains("Price update event received: BTCUSDT = 63500"));
     }
 }

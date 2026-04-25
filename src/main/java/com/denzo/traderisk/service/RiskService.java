@@ -31,7 +31,9 @@ public class RiskService {
         // 1. Проверка цены
         BigDecimal marketPrice;
         try {
+            System.out.println(">>> checkTrade called for " + request.symbol());
             marketPrice = marketDataEngine.getPrice(request.symbol());
+            System.out.println(">>> marketPrice = " + marketPrice);
         } catch (Exception e) {
             log.warn("Failed to get market price for {}: {}", request.symbol(), e.getMessage());
             return RiskCheckResult.rejected("Market price unavailable for " + request.symbol());

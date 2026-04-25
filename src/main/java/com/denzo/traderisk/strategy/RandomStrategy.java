@@ -7,37 +7,25 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.Optional;
-import java.util.Random;
+import java.util.UUID;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class RandomStrategy implements Strategy {
+public class RandomStrategy implements TradingStrategy {
 
-    private final Random random = new Random();
+    private final MarketDataEngine marketDataEngine;
 
     @Override
-    public Optional<TradingSignal> generateSignal(String symbol, BigDecimal currentPrice) {
-        // временно: всегда генерируем сигнал для демонстрации
+    public Optional<TradingSignal> generateSignal(String symbol) {
+        BigDecimal currentPrice = marketDataEngine.getPrice(symbol);
         log.debug("RandomStrategy generated BUY signal for {} at price {}", symbol, currentPrice);
         return Optional.of(new TradingSignal(
+                UUID.randomUUID(),
                 symbol,
                 SignalType.BUY,
                 currentPrice,
                 BigDecimal.ONE
         ));
-
-        /* === ОРИГИНАЛЬНАЯ ЛОГИКА (с вероятностью 50%) ===
-        if (random.nextBoolean()) {
-            log.debug("RandomStrategy generated BUY signal for {} at price {}", symbol, currentPrice);
-            return Optional.of(new TradingSignal(
-                    symbol,
-                    SignalType.BUY,
-                    currentPrice,
-                    BigDecimal.ONE
-            ));
-        }
-        return Optional.empty();
-        */
     }
 }

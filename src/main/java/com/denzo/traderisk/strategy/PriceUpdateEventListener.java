@@ -11,7 +11,7 @@ public class PriceUpdateEventListener {
 
     @EventListener
     public void onPriceUpdate(PriceUpdateEvent event) {
-        log.info("Price update event received: {} = {}", event.symbol(), event.price());
+        log.debug("Price update event received: {} = {}", event.symbol(), event.price());
         // Здесь можно запускать стратегии или обновлять риск-модели
     }
 }

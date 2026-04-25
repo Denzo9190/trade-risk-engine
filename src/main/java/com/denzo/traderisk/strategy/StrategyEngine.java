@@ -1,8 +1,7 @@
 package com.denzo.traderisk.strategy;
 
-import com.denzo.traderisk.marketdata.events.PriceUpdateEvent;
 import com.denzo.traderisk.execution.SignalProcessor;
-import lombok.RequiredArgsConstructor;
+import com.denzo.traderisk.marketdata.events.PriceUpdateEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
@@ -13,27 +12,29 @@ import java.util.Optional;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class StrategyEngine {
 
-    private final List<Strategy> strategies;
+    private final List<TradingStrategy> strategies;
     private final SignalProcessor signalProcessor;
+    private final boolean autoEnabled;
 
-    @Value("${strategy.auto.enabled:true}")
-    private boolean autoEnabled;
+    public StrategyEngine(List<TradingStrategy> strategies,
+                          SignalProcessor signalProcessor,
+                          @Value("${strategy.auto.enabled:true}") boolean autoEnabled) {
+        this.strategies = strategies;
+        this.signalProcessor = signalProcessor;
+        this.autoEnabled = autoEnabled;
+    }
 
     @EventListener
     public void onPriceUpdate(PriceUpdateEvent event) {
         if (!autoEnabled) {
-            // Автоматическая генерация сигналов отключена – просто логируем и выходим
             log.debug("Auto strategy execution disabled, skipping price update for {}", event.symbol());
             return;
         }
-
-        // Автоматическая генерация включена – обрабатываем событие
         log.debug("Price update received: {} = {}", event.symbol(), event.price());
-        for (Strategy strategy : strategies) {
-            Optional<TradingSignal> signal = strategy.generateSignal(event.symbol(), event.price());
+        for (TradingStrategy strategy : strategies) {
+            Optional<TradingSignal> signal = strategy.generateSignal(event.symbol());
             signal.ifPresent(signalProcessor::process);
         }
     }

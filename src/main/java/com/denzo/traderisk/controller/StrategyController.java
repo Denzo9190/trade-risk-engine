@@ -1,8 +1,8 @@
 package com.denzo.traderisk.controller;
 
 import com.denzo.traderisk.service.execution.SignalExecutionService;
-import com.denzo.traderisk.strategy.Signal;
 import com.denzo.traderisk.strategy.StrategyService;
+import com.denzo.traderisk.strategy.TradingSignal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,13 +17,13 @@ public class StrategyController {
     private final SignalExecutionService signalExecutionService;
 
     @GetMapping("/run")
-    public List<Signal> runStrategies(@RequestParam String symbol) {
+    public List<TradingSignal> runStrategies(@RequestParam String symbol) {
         return strategyService.evaluateStrategies(symbol);
     }
 
     @PostMapping("/execute")
     public void executeStrategies(@RequestParam String symbol) {
-        List<Signal> signals = strategyService.evaluateStrategies(symbol);
+        List<TradingSignal> signals = strategyService.evaluateStrategies(symbol);
         signalExecutionService.executeSignals(signals);
     }
 
@@ -32,7 +32,7 @@ public class StrategyController {
      */
     @PostMapping("/run-once")
     public void runOnce(@RequestParam String symbol) {
-        List<Signal> signals = strategyService.evaluateStrategies(symbol);
+        List<TradingSignal> signals = strategyService.evaluateStrategies(symbol);
         signalExecutionService.executeSignals(signals);
     }
 }
