@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -64,5 +65,9 @@ public class PositionService {
     // === Старый метод getPosition (возвращал PositionResponse) – перенаправляем ===
     public PositionResponse getPosition(String symbol) {
         return getPositionResponse(symbol);
+    }
+
+    public List<Position> getAllPositions() {
+        return positionRepository.findAll();
     }
 }
