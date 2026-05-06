@@ -28,6 +28,7 @@ risk:
   max-position-size: 10
   max-portfolio-exposure: 500000
   max-price-deviation: 0.01   # 1%
+  max-drawdown: 0.2
 
 strategy:
   runner:
@@ -40,7 +41,7 @@ logging:
   level:
     org.hibernate.SQL: WARN
     org.hibernate.type.descriptor.sql: WARN
-    com.denzo.traderisk.execution: DEBUG
+    com.denzo.traderisk: DEBUG
 
 execution:
   latency:
@@ -50,3 +51,7 @@ execution:
 marketdata:
   feed:
     enabled: true
+
+market:
+  symbols: BTCUSDT,ETHUSDT,SOLUSDT
+  refresh-interval-ms: 1000

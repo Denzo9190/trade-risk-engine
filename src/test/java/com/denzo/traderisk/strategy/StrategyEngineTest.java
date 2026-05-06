@@ -33,7 +33,7 @@ class StrategyEngineTest {
     void shouldProcessSignalsFromAllStrategies() {
         PriceUpdateEvent event = new PriceUpdateEvent("BTCUSDT", BigDecimal.valueOf(63500), Instant.now());
         TradingSignal s1 = new TradingSignal(UUID.randomUUID(), "BTCUSDT", SignalType.BUY, BigDecimal.valueOf(63500), BigDecimal.ONE);
-        TradingSignal s2 = new TradingSignal(UUID.randomUUID(), "BTCUSDT", SignalType.SELL, BigDecimal.valueOf(63500), BigDecimal.valueOf(2));
+        TradingSignal s2 = new TradingSignal("BTCUSDT", SignalType.SELL, BigDecimal.valueOf(2), BigDecimal.valueOf(63500));
 
         when(strategy1.generateSignal(event.symbol())).thenReturn(Optional.of(s1));
         when(strategy2.generateSignal(event.symbol())).thenReturn(Optional.of(s2));

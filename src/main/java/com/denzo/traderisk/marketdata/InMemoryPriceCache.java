@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
-public class InMemoryPriceCache implements PriceCache {
+public class InMemoryPriceCache extends PriceCache {
 
     private static class CachedPrice {
         final BigDecimal price;

@@ -1,12 +1,16 @@
 package com.denzo.traderisk.marketdata;
 
+import com.denzo.traderisk.marketdata.adapter.MarketDataAdapter;
+import com.denzo.traderisk.marketdata.registry.SymbolRegistry;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -16,26 +20,39 @@ import static org.mockito.Mockito.when;
 class MarketDataEngineTest {
 
     @Mock
-    private PriceCache cache;
+    private MarketDataAdapter adapter;
 
-    @InjectMocks
+    @Mock
+    private SymbolRegistry registry;
+
+    private PriceCache priceCache;
     private MarketDataEngine engine;
 
-    @Test
-    void shouldReturnPriceFromCache() {
-        when(cache.get("BTCUSDT")).thenReturn(new BigDecimal("63500"));
-
-        BigDecimal price = engine.getPrice("BTCUSDT");
-
-        assertThat(price).isEqualByComparingTo("63500");
+    @BeforeEach
+    void setUp() {
+        priceCache = new PriceCache();
+        engine = new MarketDataEngine(adapter, priceCache, registry);
     }
 
     @Test
-    void shouldThrowWhenPriceNotAvailable() {
-        when(cache.get("BTCUSDT")).thenReturn(null);
+    void shouldThrowWhenPriceNotInCache() {
+        assertThatThrownBy(() -> engine.getPrice("UNKNOWN"))
+                .isInstanceOf(PriceNotAvailableException.class)
+                .hasMessageContaining("Price not available in cache");
+    }
 
-        assertThatThrownBy(() -> engine.getPrice("BTCUSDT"))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Price not available");
+    @Test
+    void shouldReturnPriceFromCacheAfterRefresh() {
+        Set<String> symbols = Set.of("BTCUSDT", "ETHUSDT");
+        when(registry.getAll()).thenReturn(symbols);
+        when(adapter.getPrices(symbols)).thenReturn(Map.of(
+                "BTCUSDT", new BigDecimal("81500"),
+                "ETHUSDT", new BigDecimal("2400")
+        ));
+
+        engine.refreshAll();
+
+        assertThat(engine.getPrice("BTCUSDT")).isEqualByComparingTo("81500");
+        assertThat(engine.getPrice("ETHUSDT")).isEqualByComparingTo("2400");
     }
 }

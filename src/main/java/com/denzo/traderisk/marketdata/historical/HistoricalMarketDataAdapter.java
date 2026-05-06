@@ -10,6 +10,9 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 @Profile("backtest")
@@ -27,5 +30,10 @@ public class HistoricalMarketDataAdapter implements MarketDataAdapter {
         BigDecimal price = historical.getPrice(symbol, now);
         log.debug("HistoricalMarketDataAdapter: price = {}", price);
         return price;
+    }
+
+    @Override
+    public Map<String, BigDecimal> getPrices(Set<String> symbols) {
+        return symbols.stream().collect(Collectors.toMap(s -> s, this::getPrice));
     }
 }
